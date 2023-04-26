@@ -6,6 +6,8 @@
 # Node artifact files
 node_modules/
 dist/
+out/
+env-variables.json
 
 # Compiled Java class files
 *.class
