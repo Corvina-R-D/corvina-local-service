@@ -1,69 +1,68 @@
 import { BrowserWindow } from 'electron';
-import * as authService from '../services/auth-service';
 import * as artifactsService from '../services/artifacts-service';
+import * as authService from '../services/auth-service';
 // import { createAppWindow } from '../main/app-process';
 
-let win : BrowserWindow = null;
-let logoutWindow : BrowserWindow = null;
+let loginWindow: BrowserWindow | null = null;
+let logoutWindow: BrowserWindow | null = null;
+
+function destroyAuthWin() {
+  if (!loginWindow) return;
+  loginWindow.close();
+  loginWindow = null;
+}
 
 export async function createAuthWindow() {
-
   artifactsService.clearArtifactRegistryBaseUrl();
 
   destroyAuthWin();
 
   const authenticationUrl = await authService.getAuthenticationURL();
 
-  win = new BrowserWindow({
+  loginWindow = new BrowserWindow({
     width: 1000,
     height: 600,
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
-      devTools: true,
-      //enableRemoteModule: false
+      // devTools: true,
+      // enableRemoteModule: false
     },
     show: true,
     alwaysOnTop: true,
-    
   });
 
-  win.loadURL(await authService.getAuthenticationURL());
-  win.webContents.openDevTools();
+  loginWindow.loadURL(await authService.getAuthenticationURL());
+  loginWindow.webContents.openDevTools();
 
-  const {session: {webRequest}} = win.webContents;
+  const {
+    session: { webRequest },
+  } = loginWindow.webContents;
 
   const filter = {
-    urls: [
-      'http://localhost/callback*'
-    ]
+    urls: ['http://localhost/callback*'],
   };
 
-  webRequest.onBeforeRequest(filter, async ({url}) => {
+  webRequest.onBeforeRequest(filter, async ({ url }) => {
     await authService.loadTokens(url);
-    //createAppWindow();
     return destroyAuthWin();
   });
 
-
-  webRequest.onCompleted({ urls: ['https://*/*logout-confirm*', 'https://*/*logout_response*'] }, async ({url}) => {
+  webRequest.onCompleted({ urls: ['https://*/*logout-confirm*', 'https://*/*logout_response*'] }, async ({ url }) => {
+    console.log('----------------------------------------------', url);
     await authService.logout();
-    logoutWindow.close();
-  })
+    if (logoutWindow != null) {
+      logoutWindow.close();
+    }
+  });
 
-  win.on('authenticated' as any, () => {
+  loginWindow.on('authenticated' as any, () => {
     destroyAuthWin();
   });
 
-  win.on('closed', () => {
-    win = null;
+  loginWindow.on('closed', () => {
+    loginWindow = null;
   });
-}
-
-function destroyAuthWin() {
-  if (!win) return;
-  win.close();
-  win = null;
 }
 
 export async function createLogoutWindow() {
@@ -76,4 +75,14 @@ export async function createLogoutWindow() {
 
   logoutWindow.loadURL(logoutUrl);
 
+  const {
+    session: { webRequest },
+  } = logoutWindow.webContents;
+  webRequest.onCompleted({ urls: ['https://*/*logout-confirm*', 'https://*/*logout_response*'] }, async ({ url }) => {
+    console.log('+++++++++++++++++++++++++++++++++++++++++++++++', url);
+    await authService.logout();
+    if (logoutWindow != null) {
+      logoutWindow.close();
+    }
+  });
 }

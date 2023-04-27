@@ -1,0 +1,18 @@
+{
+  "recommendations": [
+    "redhat.fabric8-analytics",
+    "DavidAnson.vscode-markdownlint",
+    "eamodio.gitlens",
+    "donjayamanne.githistory",
+    "nrwl.angular-console",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "orta.vscode-jest",
+    "atlassian.atlascode",
+    "johnpapa.vscode-peacock",
+    "ms-azuretools.vscode-docker",
+    "kdcro101.vscode-cassandra",
+    "ms-kubernetes-tools.vscode-kubernetes-tools",
+    "bierner.folder-source-actions"
+  ]
+}

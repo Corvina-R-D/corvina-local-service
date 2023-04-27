@@ -1,16 +1,26 @@
 {
-    "compilerOptions": {
-      "module": "commonjs",
-      "noImplicitAny": true,
-      "sourceMap": true,
-      "outDir": "dist",
-      "baseUrl": ".",
-      "resolveJsonModule": true,
-      "paths": {
-        "*": ["node_modules/*"]
-      }
+  "compilerOptions": {
+    "module": "commonjs",
+    "noImplicitAny": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "baseUrl": ".",
+    "resolveJsonModule": true,
+    "paths": {
+      "*": [
+        "node_modules/*"
+      ]
     },
-    "include": [
-      "main.ts", "services/**/*"
-, "main/controller.ts"    ]
-  }
+    "plugins": [
+      {
+        "transform": "typia/lib/transform"
+      }
+    ],
+    "strict": true
+  },
+  "include": [
+    "main.ts",
+    "services/**/*",
+    "main/controller.ts"
+  ]
+}
