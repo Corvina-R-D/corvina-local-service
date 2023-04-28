@@ -8,12 +8,12 @@ import * as envVariables from '../../../env-variables.json';
 
 const { realm, baseUrl, clientId, wellKnown } = envVariables;
 
-interface ILoginStatus {
+export interface ILoginStatus {
   logged: boolean;
   username: string;
   organization: string;
   orgResourceId: string;
-  organizationId: number | null;
+  organizationId: string | null;
   instanceId: string;
   lastError: string;
 }
@@ -98,7 +98,7 @@ const fillStatusFromToken = async (token: string, loginOrg?: string) => {
   status.username = profile.preferred_username;
   status.organization = firstOrganization.label;
   status.orgResourceId = firstOrganization.resourceId;
-  status.organizationId = firstOrganization.id;
+  status.organizationId = firstOrganization.id.toString();
 
   status.instanceId = (await axios.get(`${baseUrl}/svc/core/api/v1/instance  `, { headers: { Authorization: `Bearer ${token}` } })).data.id;
 };
@@ -208,20 +208,26 @@ export async function getLogOutUrl() {
   return (await getUris()).end_session_endpoint;
 }
 
+
+let refreshInterval : NodeJS.Timer | null = null;
+
 export async function getAccessToken(): Promise<any> {
+  if (refreshInterval == undefined) {
+    // ensure the token is kept refreshed while logged ins
+    refreshInterval = setInterval(async () => {
+        if (status.logged) {
+          try {
+            await getAccessToken();
+          } catch (error) {
+            console.warn('Error refreshing token!', error);
+          }
+        }
+    }, 1000 * 30);
+  }
   if (Date.now() >= accessTokenExpiration) {
     await refreshTokens();
   }
   return accessToken;
 }
 
-// ensure the token is kept refreshed while logged ins
-setInterval(async () => {
-  if (status.logged) {
-    try {
-      await getAccessToken();
-    } catch (error) {
-      console.warn('Error refreshing token!', error);
-    }
-  }
-}, 1000 * 30);
+

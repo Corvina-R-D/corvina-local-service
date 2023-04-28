@@ -97,7 +97,7 @@ export const postArtifact = async (artifact: IArtifactIn): Promise<IArtifact> =>
     // post the new repository
     const formData = new FormData();
     if (artifact.version) formData.append('version', artifact.version);
-    if (artifact.publicAccess) formData.append('publicAccess', artifact.publicAccess);
+    if (artifact.publicAccess) formData.append('publicAccess', artifact.publicAccess.toString());
     if (artifact.labels) formData.append('labels', JSON.stringify(artifact.labels));
     else {
       formData.append('labels', '{}'); // is required

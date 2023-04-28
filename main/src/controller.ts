@@ -1,33 +1,57 @@
-import * as bodyParser from 'body-parser';
-import express from 'express';
-import { createAuthWindow, createLogoutWindow } from './auth-process';
+import * as authProcess from './auth-process';
 import * as artifactsService from './services/artifacts-service';
 import * as authService from './services/auth-service';
 //import YamlContent from './swagger.yaml';
-import { assertIArtifactIn, assertISearchArtifactsRequest, stringifyIArtifact, stringifyIPageIArtifact } from './templates/types';
-export const serverApp = express();
-// parse application/x-www-form-urlencoded
-serverApp.use(bodyParser.json());
+import { TypedBody, TypedRoute } from "@nestia/core";
+import { Controller } from "@nestjs/common";
+import { IArtifact, IPage } from './services/artifacts-service';
 
-serverApp.get('/status', (req, res) => {
-  res.json(authService.status);
-});
 
-serverApp.post('/login', (req, res) => {
-  createAuthWindow();
-  res.sendStatus(200);
-});
+@Controller("/")
+export class AppController {
 
-serverApp.post('/logout', (req, res) => {
-  createLogoutWindow();
-  res.sendStatus(200);
-});
+    /**
+     * Returns current login status
+     */
+    @TypedRoute.Get("/status")
+    public async status(): Promise<authService.ILoginStatus> {
+      return authService.status;
+    }
 
-serverApp.post('/artifact-registry/artifacts/search', async (req, res) => {
-  assertISearchArtifactsRequest(req.body);
-  const result = await artifactsService.searchArtifacts(req.body);
-  res.type('application/json').status(200).send(stringifyIPageIArtifact(result));
-});
+    /**
+     * Returns current login status
+     */
+    @TypedRoute.Get("/login")
+    public async login(): Promise<void> {
+      authProcess.createAuthWindow();
+    }
+
+    /**
+     * Returns current login status
+     */
+    @TypedRoute.Get("/logout")
+    public async logout(): Promise<void> {
+      authProcess.createLogoutWindow;
+    }
+
+    /**
+     * Search for artifacts
+     */
+    @TypedRoute.Post("/artifact-registry/artifacts/search")
+    public async artifactsSearch(@TypedBody() input : artifactsService.ISearchArtifactsRequest): Promise<IPage<IArtifact>> {
+        return await artifactsService.searchArtifacts(input);
+    }
+
+    /**
+     * Upload new artifacts
+     */
+    @TypedRoute.Post("/artifact-registry/artifacts")
+    public async uploadArtifact(@TypedBody() input : artifactsService.IArtifactIn): Promise<IArtifact> {
+        return await artifactsService.postArtifact(input);
+    }
+  }
+
+/* 
 
 serverApp.post('/artifact-registry/artifacts', async (req, res) => {
   const a = assertIArtifactIn(req.body);
@@ -38,3 +62,4 @@ serverApp.post('/artifact-registry/artifacts', async (req, res) => {
 });
 
 //serverApp.use('/swagger-ui', swaggerUI.serve, swaggerUI.setup(YamlContent));
+*/
