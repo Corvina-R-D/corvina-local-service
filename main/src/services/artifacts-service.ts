@@ -1,6 +1,7 @@
 import axios from 'axios';
 import FormData from 'form-data';
 import * as fs from 'fs';
+import * as path from 'path';
 import { baseUrl } from '../../../env-variables.json';
 import { assertIArtifact, assertIPageIRepository, assertIRepository } from '../templates/types';
 import * as authService from './auth-service';
@@ -135,3 +136,29 @@ export const postArtifact = async (artifact: IArtifactIn): Promise<IArtifact> =>
   const parsedResult = assertIArtifact(result);
   return parsedResult;
 };
+
+export const downloadArtifact = async (artifactId: string, localPath: string): Promise<void> => {
+  const url = `${await getArtifactRegistryBaseUrl()}/${authService.status.instanceId}/${authService.status.organizationId}/artifacts/${artifactId}/content`;
+  const resolvedPath = path.resolve(localPath);
+  const writer = fs.createWriteStream(localPath)
+
+  const response = await axios({
+    url,
+    method: 'GET',
+    responseType: 'stream',
+    headers: { Authorization: `Bearer ${await authService.getAccessToken()}` },
+  })
+
+  response.data.pipe(writer)
+
+  return new Promise((resolve, reject) => {
+    writer.on('finish', () => {
+      console.log(`Download of artifact ${artifactId} to file ${resolvedPath} completed`);
+      resolve();
+    })
+    writer.on('error', (error) => {
+      console.log(`Error downloading artifact ${artifactId} to file ${resolvedPath}`,  error);
+      reject(error);
+    })
+  })
+}

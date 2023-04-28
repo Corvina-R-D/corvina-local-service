@@ -130,6 +130,41 @@
         "x-nestia-namespace": "artifact-registry.artifacts.uploadArtifact",
         "x-nestia-jsDocTags": []
       }
+    },
+    "/artifact-registry/artifacts/{artifactId}/content": {
+      "get": {
+        "tags": [],
+        "parameters": [
+          {
+            "name": "artifactId",
+            "in": "path",
+            "description": "",
+            "schema": {
+              "type": "string",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "description": "",
+            "schema": {
+              "$ref": "#/components/schemas/__type"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "x-nestia-encrypted": false
+          }
+        },
+        "description": "Get an artifact content",
+        "x-nestia-namespace": "artifact-registry.artifacts.content.downloadArtifact",
+        "x-nestia-jsDocTags": []
+      }
     }
   },
   "components": {
@@ -402,6 +437,21 @@
           "localPath",
           "repositoryName",
           "type"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "__type": {
+        "type": "object",
+        "properties": {
+          "localPath": {
+            "type": "string",
+            "nullable": false,
+            "x-typia-required": true
+          }
+        },
+        "nullable": false,
+        "required": [
+          "localPath"
         ],
         "x-typia-jsDocTags": []
       }

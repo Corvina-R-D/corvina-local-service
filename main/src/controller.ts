@@ -2,7 +2,7 @@ import * as authProcess from './auth-process';
 import * as artifactsService from './services/artifacts-service';
 import * as authService from './services/auth-service';
 //import YamlContent from './swagger.yaml';
-import { TypedBody, TypedRoute } from "@nestia/core";
+import { TypedBody, TypedParam, TypedQuery, TypedRoute } from "@nestia/core";
 import { Controller } from "@nestjs/common";
 import { IArtifact, IPage } from './services/artifacts-service';
 
@@ -49,6 +49,16 @@ export class AppController {
     public async uploadArtifact(@TypedBody() input : artifactsService.IArtifactIn): Promise<IArtifact> {
         return await artifactsService.postArtifact(input);
     }
+
+    /**
+     * Get an artifact content
+     */
+    @TypedRoute.Get("/artifact-registry/artifacts/:artifactId/content")
+    public async downloadArtifact(@TypedParam("artifactId") artifactId : string, @TypedQuery() query : { localPath: string } ): Promise<any> {
+        await artifactsService.downloadArtifact(artifactId, query.localPath);
+        return "";
+    }
+
   }
 
 /* 
