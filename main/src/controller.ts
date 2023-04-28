@@ -6,7 +6,6 @@ import { assertIArtifactIn, assertISearchArtifactsRequest, stringifyIArtifact, s
 import * as artifactsService from './services/artifacts-service';
 import * as authService from './services/auth-service';
 import YamlContent from './swagger.yaml';
-console.log(YamlContent.example);
 export const serverApp = express();
 // parse application/x-www-form-urlencoded
 serverApp.use(bodyParser.json());
