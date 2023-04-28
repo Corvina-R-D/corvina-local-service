@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron';
-import * as artifactsService from '../services/artifacts-service';
-import * as authService from '../services/auth-service';
+import * as artifactsService from './services/artifacts-service';
+import * as authService from './services/auth-service';
 // import { createAppWindow } from '../main/app-process';
 
 let loginWindow: BrowserWindow | null = null;

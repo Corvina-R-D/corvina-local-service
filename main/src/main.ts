@@ -1,18 +1,18 @@
 import { BrowserWindow, Menu, Tray, app, ipcMain } from 'electron';
 
 import * as path from 'path';
-import { createAuthWindow, createLogoutWindow } from './main/auth-process';
+import { createAuthWindow, createLogoutWindow } from './auth-process';
 // import { createAppWindow } from './main/app-process';
 import * as authService from './services/auth-service';
 
-import * as controller from './main/controller';
+import * as controller from './controller';
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 let tray: Tray;
 app.on('ready', () => {
-  tray = new Tray(path.join(__dirname, '../icon.ico'));
+  tray = new Tray(path.join(__dirname, '/icon.ico'));
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Quit', click: () => app.quit() },
     { label: 'Login', click: () => createAuthWindow() },

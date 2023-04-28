@@ -4,7 +4,7 @@ import * as keytar from 'keytar';
 import * as os from 'os';
 import * as qs from 'qs';
 import * as url from 'url';
-import * as envVariables from '../env-variables.json';
+import * as envVariables from '../../../env-variables.json';
 
 const { realm, baseUrl, clientId, wellKnown } = envVariables;
 

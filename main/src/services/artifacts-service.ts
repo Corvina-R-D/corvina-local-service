@@ -1,9 +1,8 @@
 import axios from 'axios';
-import * as FormData from 'form-data';
+import FormData from 'form-data';
 import * as fs from 'fs';
-/* eslint-disable-next-line import/no-extraneous-dependencies */
-import typia from 'typia';
-import { baseUrl } from '../env-variables.json';
+import { baseUrl } from '../../../env-variables.json';
+import { assertIArtifact, assertIPageIRepository, assertIRepository } from '../generated/types';
 import * as authService from './auth-service';
 
 let artifactRegistryBaseUrl: string | undefined;
@@ -93,7 +92,7 @@ export const postArtifact = async (artifact: IArtifactIn): Promise<IArtifact> =>
       headers: { Authorization: `Bearer ${await authService.getAccessToken()}` },
     })
   ).data;
-  const repositories = typia.assert<IPage<IRepository>>(response).content.filter((r) => r.name === artifact.repositoryName);
+  const repositories = assertIPageIRepository(response).content.filter((r) => r.name === artifact.repositoryName);
   if (repositories.length === 0) {
     // post the new repository
     const formData = new FormData();
@@ -111,7 +110,7 @@ export const postArtifact = async (artifact: IArtifactIn): Promise<IArtifact> =>
         headers: { ...formData.getHeaders(), Authorization: `Bearer ${await authService.getAccessToken()}` },
       })
     ).data;
-    const parsedResult = typia.assert<IRepository>(result);
+    const parsedResult = assertIRepository(result);
     // get the latest pushed artifact
     return (await searchArtifacts({ page: 0, pageSize: 1, repositoryName: parsedResult.name, isLatest: true, type: artifact.type })).content[0];
   }
@@ -133,6 +132,6 @@ export const postArtifact = async (artifact: IArtifactIn): Promise<IArtifact> =>
   ).data;
   // fix string size
   result.size = parseInt(result.size, 10);
-  const parsedResult = typia.assert<IArtifact>(result);
+  const parsedResult = assertIArtifact(result);
   return parsedResult;
 };

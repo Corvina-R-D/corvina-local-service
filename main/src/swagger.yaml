@@ -1,0 +1,344 @@
+openapi: '3.0.0'
+servers:
+  - url: http://localhost:5804
+info:
+  version: '1.0.0'
+  title: 'Corvina drive proxy api'
+  description: Push/pull artifacts to corvina
+
+paths:
+  /login:
+    post:
+      summary: Login with corvina
+      responses:
+        202:
+          description: The action has been accepted. Monitor the status via the /status endpoint
+  /logout:
+    post:
+      summary: Logout from corvina
+      responses:
+        200:
+          description: Successfully logged out from corvina
+  /status:
+    get:
+      summary: Get the current status
+      responses:
+        200:
+          description: Current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Status"  
+  /artifact-registry/artifacts/{artifactId}/content:
+    get:
+      parameters:
+        - name: artifactId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: localPath
+          in: query
+          required: true
+          description: Path of local file (or folder, in this case the filename will be <repositoryName>:<versions[0] or sha256>) where the selected content will be downloaded
+          schema:
+            type: string
+            example: "%userprofile%/Downloads"
+      responses:
+        '200':
+          description: Returns the content of the artifact
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary  
+  /artifact-registry/artifacts/search:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref:  "#/components/schemas/ArtifactSearch"
+            example:
+              page: 0
+              pageSize: 100
+              type:  "application/vnd.org.app.tar+gzip"
+              isLatest: true
+      responses:
+        '200':
+          description: Returns the list of matching artifacts
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/PageOfArtifacts"
+  /artifact-registry/artifacts:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref:  "#/components/schemas/ArtifactPost"
+            example:
+              localPath: "%appdata%/org/projects/project1.mypro"
+              repositoryName: "project1"
+              version: "1.0.0"
+              type:  "application/vnd.org.app.tar+gzip"
+              labels:
+                "key1": "value1" 
+                "key2": "value2" 
+
+      summary: Push an artifact to the registry repository from a local path 
+      responses:
+        '201':
+          description: The artifact has been uploaded to repository
+  /vpn/gateways:
+    description: Returns a filtered list of VPN gateways (along with their endpoints)
+    get:
+      parameters:
+        - name:  page
+          in: query
+          description: The requested page, 0 indexed
+          schema:
+            type: number
+          example: 0
+        - name: pageSize
+          in: query
+          description: The requested page size
+          schema:
+            type: number
+          example: 100
+        - name: sortDir
+          in: qyery
+          description: 
+          schema:
+            description: the sorting direction
+            type: string
+            enum:
+              - ASC
+              - DESC
+        - name: status
+          in: query
+          description: Returns only gateways matching the given status
+          schema:
+            $ref: "#/components/schemas/VpnStatus"
+        - name: nameFilter
+          in: query
+          description: Returns only gateways with labels containing this filter
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns the list of available gateways
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/PageOfVpnGateways"
+
+
+  /vpn/endpoints/{endpointId}/connect:
+    post:
+      description: Open VPN channel to the selected device (endpointId) and returns its IP. If the connection is already opened just return the current IP. This operation is synchronous and might take some time to return.
+      parameters:
+        - name: endpointId
+          description: The endpointId to connect to
+          schema:
+            type: string 
+      responses:
+        '200':
+          description: Returns the endpoint IP
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ip:
+                    type: string
+                    description: IP to be used to reach the endpoint
+        '500':
+          description: Failed connecting
+  /vpn/endpoints/{endpointId}/disconnect:
+    post:
+      description: Close any open VPN chanenl to the selected endpoint. This operation will succeed if the channel is already closed. This operation is synchronous and might take some time to return.
+      parameters:
+        - name: endpointId
+          description: The endpointId to disconnect from
+          schema:
+            type: string 
+      responses:
+        '200':
+          description: Success
+
+components:
+  schemas:
+    Status:
+      description: Current connection status
+      type: object
+      properties:
+        logged: 
+          type: boolean
+          description: true if logged in with corvina
+        username: 
+          type: string
+          description: the current logged in username
+        organization: 
+          type: string
+          description: the current logged in organization
+        lastError:
+          type: string
+          description: last error message, or empty if no error
+    Artifact:
+      description: Artificat structure
+      type: object
+      properties:
+        id:
+          type: string
+        author:
+          type: string
+        size:
+          type: number
+        type:
+          type: string
+          description: MIME type
+        uploadedAt:
+          type: string
+          description: ISO date
+        labels:
+          type: object
+        repositoryName:
+          type: string
+        resourceUrl:
+          type: string
+          description: OCI url of the reosurce
+        versions:
+          type: array
+          description: Version matching this content
+          items:
+            type: string
+        isLatest:
+          type: boolean
+          description: is the latest uploaded version
+    PageOfArtifacts:
+      type: object
+      properties:
+        number:
+          description: Current page
+          type: number
+        totalElements:
+          description: Total number of elements
+          type: number
+        totalPages:
+          description: Total number of pages
+          type: number
+        content:
+          description: List of artifacts
+          type: array 
+          items:
+            $ref: "#/components/schemas/Artifact"
+
+
+
+    ArtifactPost:
+      type: object
+      required: [ "localPath", "repositoryName", "version", "type"]
+      properties:
+        localPath:
+          description: Path of local file to store to corvina
+          type: string
+        repositoryName:
+          description: Name of the repo
+          type: string
+        version:
+          description: Tag version of the artifact push
+          type: string
+        type:
+          description: File MIME type, for instance application/vnd.org.app.tar+gzip
+          type: string
+        labels:
+          description: Optional JSON object of key=value pairs
+          type: object
+    ArtifactSearch:
+      type: object
+      required: 
+        - page
+        - pageSize
+      properties:
+        page:
+          description: Pagination selected page
+          type: number
+        pageSize:
+          description: Maximum number of entries returned from page
+          type: number
+        search:
+          description: Free text search
+          type: string
+        type:
+          description: Search only for a specify MIME type
+          type: string
+        labels:
+          description: Search only for artifacts matching the givne key=value map
+          type: object
+        isLatest:
+          description: Returns only the latest uploaded artifact
+          type: boolean
+    PageOfVpnGateways:
+      type: object
+      properties:
+        number:
+          description: Current page
+          type: number
+        totalElements:
+          description: Total number of elements
+          type: number
+        totalPages:
+          description: Total number of pages
+          type: number
+        content:
+          description: List of devices
+          type: array 
+          items:
+            $ref: "#/components/schemas/VpnGateway"
+    VpnStatus:
+      type: string
+      enum:
+        - all
+        - online
+        - offline
+        - in-use
+    VpnEndpoint:
+      type: object
+      properties:
+        id:
+          description: Id of this endpoint.
+        deviceId:
+          description: The id of the physical device this endpoint belongs to. If this deviceId matches the deviceId of the gateway, then the endpoint directly belongs to the gateway.
+        name:
+          description: Name of the VPN endpoint
+          type: string
+        connectedUsers:
+          description: "Currently connected users"
+          type: array
+          items:
+            type: object
+            properties:
+              name: 
+                description: Username
+                type: string
+    VpnGateway:
+      type: object
+      properties:
+        deviceId:
+          description: Id of physical device representing the gateway. It is mainly used to identify which endpoints physically belong to the gateway (for instance the one with real ip 127.0.0.1)
+          type: string
+        name:
+          description: Name of the VPN gateway
+          type: string
+        status:
+          $ref:  "#/components/schemas/VpnStatus"
+        otpRequired:
+          description: OTP is required for connecting to this endpoint
+          type: boolean
+        endpoints:
+          description: List of VPN endpoints 
+          type: array
+          items:
+            $ref:  "#/components/schemas/VpnEndpoint"
