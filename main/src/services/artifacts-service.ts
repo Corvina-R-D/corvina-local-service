@@ -2,7 +2,7 @@ import axios from 'axios';
 import FormData from 'form-data';
 import * as fs from 'fs';
 import { baseUrl } from '../../../env-variables.json';
-import { assertIArtifact, assertIPageIRepository, assertIRepository } from '../generated/types';
+import { assertIArtifact, assertIPageIRepository, assertIRepository } from '../templates/types';
 import * as authService from './auth-service';
 
 let artifactRegistryBaseUrl: string | undefined;

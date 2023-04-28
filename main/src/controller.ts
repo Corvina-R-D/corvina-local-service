@@ -1,11 +1,10 @@
 import * as bodyParser from 'body-parser';
 import express from 'express';
-import * as swaggerUI from 'swagger-ui-express';
 import { createAuthWindow, createLogoutWindow } from './auth-process';
-import { assertIArtifactIn, assertISearchArtifactsRequest, stringifyIArtifact, stringifyIPageIArtifact } from './generated/types';
 import * as artifactsService from './services/artifacts-service';
 import * as authService from './services/auth-service';
-import YamlContent from './swagger.yaml';
+//import YamlContent from './swagger.yaml';
+import { assertIArtifactIn, assertISearchArtifactsRequest, stringifyIArtifact, stringifyIPageIArtifact } from './templates/types';
 export const serverApp = express();
 // parse application/x-www-form-urlencoded
 serverApp.use(bodyParser.json());
@@ -38,4 +37,4 @@ serverApp.post('/artifact-registry/artifacts', async (req, res) => {
     .send(stringifyIArtifact(await artifactsService.postArtifact(a)));
 });
 
-serverApp.use('/swagger-ui', swaggerUI.serve, swaggerUI.setup(YamlContent));
+//serverApp.use('/swagger-ui', swaggerUI.serve, swaggerUI.setup(YamlContent));
