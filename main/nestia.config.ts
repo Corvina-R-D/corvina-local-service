@@ -4,7 +4,8 @@ const config: INestiaConfig = {
     input: [ "./src/controller.ts" ],
     output: "./public",
     compilerOptions: {
-      module: "commonjs"
+      module: "commonjs",
+      allowSyntheticDefaultImports: true,
     },
     swagger: {
         output: "public/swagger.json",

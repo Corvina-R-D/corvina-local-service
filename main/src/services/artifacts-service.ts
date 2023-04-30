@@ -1,12 +1,24 @@
 import axios from 'axios';
+import { randomUUID } from 'crypto';
 import FormData from 'form-data';
 import * as fs from 'fs';
+import NodeCache from 'node-cache';
 import * as path from 'path';
 import { baseUrl } from '../../../env-variables.json';
 import { assertIArtifact, assertIPageIRepository, assertIRepository } from '../templates/types';
 import * as authService from './auth-service';
 
 let artifactRegistryBaseUrl: string | undefined;
+
+export interface IJobStatus {
+  id: string;
+  status: string;
+  message?: string;
+  percentage: number;
+  cancel: () => void;
+}
+
+let jobCache = new NodeCache({ stdTTL: 15 * 60, useClones: false });
 
 export interface ISearchArtifactsRequest {
   page: number;
@@ -82,7 +94,11 @@ export const searchArtifacts = async (query: ISearchArtifactsRequest): Promise<I
   return response.data;
 };
 
-export const postArtifact = async (artifact: IArtifactIn): Promise<IArtifact> => {
+export const postArtifact = async (
+  artifact: IArtifactIn,
+  progressCallback?: (progress: number) => void,
+  abortController?: AbortController
+): Promise<IArtifact> => {
   // check if repository with same artifact name already exists
   const repositoriesUrl = `${await getArtifactRegistryBaseUrl()}/${authService.status.instanceId}/${authService.status.organizationId}/repositories`;
   const response = (
@@ -109,6 +125,11 @@ export const postArtifact = async (artifact: IArtifactIn): Promise<IArtifact> =>
     const result = (
       await axios.post(repositoriesUrl, formData, {
         headers: { ...formData.getHeaders(), Authorization: `Bearer ${await authService.getAccessToken()}` },
+        signal: abortController ? abortController.signal : undefined,
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = <number>progressEvent.progress*100;
+          if (progressCallback) progressCallback(percentCompleted);
+        },
       })
     ).data;
     const parsedResult = assertIRepository(result);
@@ -129,6 +150,11 @@ export const postArtifact = async (artifact: IArtifactIn): Promise<IArtifact> =>
   const result = (
     await axios.post(artifactUrl, formData, {
       headers: { ...formData.getHeaders(), Authorization: `Bearer ${await authService.getAccessToken()}` },
+      signal: abortController ? abortController.signal : undefined,
+      onUploadProgress: (progressEvent) => {
+        const percentCompleted = <number>progressEvent.progress*100;
+        if (progressCallback) progressCallback(percentCompleted);
+      },
     })
   ).data;
   // fix string size
@@ -137,28 +163,140 @@ export const postArtifact = async (artifact: IArtifactIn): Promise<IArtifact> =>
   return parsedResult;
 };
 
-export const downloadArtifact = async (artifactId: string, localPath: string): Promise<void> => {
+export const postArtifactAsync = (artifact: IArtifactIn): IJobStatus => {
+  let jobId = randomUUID().toString();
+  const controller = new AbortController();
+
+  let status = {
+    id: jobId,
+    status: 'running',
+    percentage: 0,
+    message: 'Started uploading artifact',
+    cancel: () => {
+      controller.abort();
+    },
+  };
+  jobCache.set(jobId, status);
+
+  postArtifact(
+    artifact,
+    (progress: number) => {
+      if (status.status != 'error' && status.status != 'cancelled') {
+        status.message = 'Upload in progress';
+        status.status = 'running';
+      }
+      status.percentage = Math.min(99,progress);
+    },
+    controller
+  )
+    .then((result) => {
+      status.message = 'Upload completed';
+      status.percentage = 100;
+      status.status = 'completed';
+    })
+    .catch((error: any) => {
+      if (error?.code == 'ERR_CANCELED') {
+        status.message = 'Upload cancelled';
+        status.status = 'cancelled';
+      } else {
+        status.message = `Error uploading: ${error}`;
+        status.status = 'error';
+      }
+    });
+
+  return status;
+};
+
+export const downloadArtifact = async (
+  artifactId: string,
+  localPath: string,
+  progressCallback?: (progress: number) => void,
+  abortController?: AbortController
+): Promise<void> => {
   const url = `${await getArtifactRegistryBaseUrl()}/${authService.status.instanceId}/${authService.status.organizationId}/artifacts/${artifactId}/content`;
   const resolvedPath = path.resolve(localPath);
-  const writer = fs.createWriteStream(localPath)
+  const writer = fs.createWriteStream(localPath);
 
   const response = await axios({
     url,
     method: 'GET',
     responseType: 'stream',
+    signal: abortController ? abortController.signal : undefined,
+    onDownloadProgress: (progressEvent) => {
+      const percentCompleted = <number>progressEvent.progress*100;
+      if (progressCallback) progressCallback(percentCompleted);
+    },
     headers: { Authorization: `Bearer ${await authService.getAccessToken()}` },
-  })
+  });
 
-  response.data.pipe(writer)
+  response.data.pipe(writer);
 
   return new Promise((resolve, reject) => {
     writer.on('finish', () => {
       console.log(`Download of artifact ${artifactId} to file ${resolvedPath} completed`);
       resolve();
-    })
+    });
     writer.on('error', (error) => {
-      console.log(`Error downloading artifact ${artifactId} to file ${resolvedPath}`,  error);
+      console.log(`Error downloading artifact ${artifactId} to file ${resolvedPath}`, error);
       reject(error);
+    });
+  });
+};
+
+export const downloadArtifactAsync = (artifactId: string, localPath: string): IJobStatus => {
+  let jobId = randomUUID().toString();
+  const controller = new AbortController();
+
+  const status = {
+    id: jobId,
+    status: 'running',
+    percentage: 0,
+    message: 'Started downloading artifact',
+    cancel: () => {
+      controller.abort();
+      status.status = 'cancelled';
+    },
+  };
+  jobCache.set(jobId, status);
+
+  downloadArtifact(
+    artifactId,
+    localPath,
+    (progress: number) => {
+      if (status.status != 'error' && status.status != 'cancelled') {
+        status.message = 'Download in progress';
+        status.status = <'running'>'running';
+      }
+      status.percentage = Math.min(99,progress);
+    },
+    controller
+  )
+    .then((result) => {
+      status.message = 'Download completed';
+      status.percentage = 100;
+      status.status = 'completed';
     })
-  })
-}
+    .catch((error: any) => {
+      if (error?.code == 'ERR_CANCELED') {
+        status.message = 'Download cancelled';
+        status.status = 'cancelled';
+      } else {
+        status.message = `Error downloading: ${error}`;
+        status.status = 'error';
+      }
+    });
+
+  return status;
+};
+
+export const getJobStatus = (jobId: string): IJobStatus | undefined => {
+  return jobCache.get(jobId);
+};
+
+export const cancelJob = (jobId: string): IJobStatus | undefined => {
+  const job: IJobStatus | undefined = jobCache.get(jobId);
+  if (job) {
+    job.cancel();
+  }
+  return job;
+};

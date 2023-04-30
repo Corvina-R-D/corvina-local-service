@@ -5,10 +5,11 @@ import { Request, Response } from 'express';
 @Catch(AxiosError)
 export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: any, host: ArgumentsHost) {
+    console.log("trapped error: ", exception);
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
-    const statusCode = exception?.response?.status;
+    const statusCode = exception?.response?.status || 500;
     const message = exception?.response?.data?.message || exception?.response?.data?.error || exception?.message || exception?.error;
 
     response

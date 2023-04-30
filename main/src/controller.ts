@@ -51,6 +51,14 @@ export class AppController {
     }
 
     /**
+     * Async upload version. Returns a job ID to monitor for upload status
+     */
+    @TypedRoute.Post("/artifact-registry/artifacts/async")
+    public async uploadArtifactAsync(@TypedBody() input : artifactsService.IArtifactIn): Promise<artifactsService.IJobStatus> {
+        return artifactsService.postArtifactAsync(input);
+    }
+    
+    /**
      * Get an artifact content
      */
     @TypedRoute.Get("/artifact-registry/artifacts/:artifactId/content")
@@ -59,6 +67,31 @@ export class AppController {
         return "";
     }
 
+    /**
+     * Get an artifact content. Async version returns a job ID to monitor for download status
+     */
+    @TypedRoute.Get("/artifact-registry/artifacts/:artifactId/content/async")
+    public async downloadArtifactAsync(@TypedParam("artifactId") artifactId : string, @TypedQuery() query : { localPath: string } ): Promise<artifactsService.IJobStatus> {
+        return artifactsService.downloadArtifactAsync(artifactId, query.localPath);
+    }
+
+    /**
+     * Get an artifact job status
+     */
+    @TypedRoute.Get("/artifact-registry/jobs/:jobId")
+    public jobStatus(@TypedParam("jobId") jobId : string): artifactsService.IJobStatus | undefined {
+        return artifactsService.getJobStatus(jobId);
+    }
+
+    /**
+     * Cancel ongoing job
+     */
+    @TypedRoute.Delete("/artifact-registry/jobs/:jobId")
+    public cancelJob(@TypedParam("jobId") jobId : string): artifactsService.IJobStatus | undefined {
+        return artifactsService.cancelJob(jobId);
+    }
+    
+    
   }
 
 /* 

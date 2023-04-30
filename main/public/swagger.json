@@ -131,6 +131,41 @@
         "x-nestia-jsDocTags": []
       }
     },
+    "/artifact-registry/artifacts/async": {
+      "post": {
+        "tags": [],
+        "parameters": [],
+        "requestBody": {
+          "description": "",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IArtifactIn"
+              }
+            }
+          },
+          "required": true,
+          "x-nestia-encrypted": false
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IJobStatus"
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          }
+        },
+        "summary": "Async upload version",
+        "description": "Async upload version. Returns a job ID to monitor for upload status",
+        "x-nestia-namespace": "artifact-registry.artifacts.async.uploadArtifactAsync",
+        "x-nestia-jsDocTags": []
+      }
+    },
     "/artifact-registry/artifacts/{artifactId}/content": {
       "get": {
         "tags": [],
@@ -163,6 +198,113 @@
         },
         "description": "Get an artifact content",
         "x-nestia-namespace": "artifact-registry.artifacts.content.downloadArtifact",
+        "x-nestia-jsDocTags": []
+      }
+    },
+    "/artifact-registry/artifacts/{artifactId}/content/async": {
+      "get": {
+        "tags": [],
+        "parameters": [
+          {
+            "name": "artifactId",
+            "in": "path",
+            "description": "",
+            "schema": {
+              "type": "string",
+              "nullable": false
+            },
+            "required": true
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "description": "",
+            "schema": {
+              "$ref": "#/components/schemas/__type.o1"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IJobStatus"
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          }
+        },
+        "summary": "Get an artifact content",
+        "description": "Get an artifact content. Async version returns a job ID to monitor for download status",
+        "x-nestia-namespace": "artifact-registry.artifacts.content.async.downloadArtifactAsync",
+        "x-nestia-jsDocTags": []
+      }
+    },
+    "/artifact-registry/jobs/{jobId}": {
+      "get": {
+        "tags": [],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "description": "",
+            "schema": {
+              "type": "string",
+              "nullable": false
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IJobStatus"
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          }
+        },
+        "description": "Get an artifact job status",
+        "x-nestia-namespace": "artifact-registry.jobs.jobStatus",
+        "x-nestia-jsDocTags": []
+      },
+      "delete": {
+        "tags": [],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "description": "",
+            "schema": {
+              "type": "string",
+              "nullable": false
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IJobStatus"
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          }
+        },
+        "description": "Cancel ongoing job",
+        "x-nestia-namespace": "artifact-registry.jobs.cancelJob",
         "x-nestia-jsDocTags": []
       }
     }
@@ -440,7 +582,54 @@
         ],
         "x-typia-jsDocTags": []
       },
+      "IJobStatus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "message": {
+            "type": "string",
+            "nullable": false,
+            "x-typia-required": false
+          },
+          "percentage": {
+            "type": "number",
+            "nullable": false,
+            "x-typia-required": true
+          }
+        },
+        "nullable": false,
+        "required": [
+          "id",
+          "status",
+          "percentage"
+        ],
+        "x-typia-jsDocTags": []
+      },
       "__type": {
+        "type": "object",
+        "properties": {
+          "localPath": {
+            "type": "string",
+            "nullable": false,
+            "x-typia-required": true
+          }
+        },
+        "nullable": false,
+        "required": [
+          "localPath"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "__type.o1": {
         "type": "object",
         "properties": {
           "localPath": {
