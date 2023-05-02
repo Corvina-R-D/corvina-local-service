@@ -17,8 +17,6 @@ export async function createAuthWindow() {
 
   destroyAuthWin();
 
-  const authenticationUrl = await authService.getAuthenticationURL();
-
   loginWindow = new BrowserWindow({
     width: 1000,
     height: 600,
@@ -33,19 +31,32 @@ export async function createAuthWindow() {
   });
 
   loginWindow.loadURL(await authService.getAuthenticationURL());
-  loginWindow.webContents.openDevTools();
+  //loginWindow.webContents.openDevTools();
 
   const {
     session: { webRequest },
   } = loginWindow.webContents;
 
-  const filter = {
-    urls: ['http://localhost/callback*'],
-  };
-
-  webRequest.onBeforeRequest(filter, async ({ url }) => {
-    await authService.loadTokens(url);
-    return destroyAuthWin();
+  webRequest.onBeforeRequest({
+    urls: [`${authService.selectOrgRedirectUri}*`, `${authService.redirectUri}*`],
+  }, async ({ url }) => {
+    if (url.startsWith(authService.selectOrgRedirectUri)) {
+      const organizationId = (new URL(url)).searchParams.get('org')?.split(",")[1];
+      await authService.loadRptToken(organizationId);
+      return destroyAuthWin();
+    } else {
+      try {
+        await authService.loadTokens(url);
+        return destroyAuthWin();
+      } catch(e) {
+        if (loginWindow && e instanceof authService.OrganizationSelectionRequiredException) {
+          // suborganization selection is required
+          loginWindow.loadURL(await authService.getLoginSelectionUrl());
+        } else {
+          throw e;
+        }
+      }
+    }
   });
 
   webRequest.onCompleted({ urls: ['https://*/*logout-confirm*', 'https://*/*logout_response*'] }, async ({ url }) => {

@@ -7,6 +7,7 @@ import * as path from 'path';
 import { baseUrl } from '../../../env-variables.json';
 import { assertIArtifact, assertIPageIRepository, assertIRepository } from '../templates/types';
 import * as authService from './auth-service';
+import { IPage, loginStatus } from './common';
 
 let artifactRegistryBaseUrl: string | undefined;
 
@@ -62,15 +63,6 @@ export interface IArtifactIn {
   publicAccess?: boolean;
 }
 
-export interface IPage<T> {
-  number: number;
-  totalPages: number;
-  totalElements: number;
-  size: number;
-  last: boolean;
-  content: T[];
-}
-
 export const clearArtifactRegistryBaseUrl = () => {
   artifactRegistryBaseUrl = undefined;
 };
@@ -81,7 +73,7 @@ interface IApp {
 
 const getArtifactRegistryBaseUrl = async (): Promise<string | undefined> => {
   if (artifactRegistryBaseUrl == null) {
-    const url = `${baseUrl}/svc/core/api/v1/organizations/${authService.status.organizationId}/apps`;
+    const url = `${baseUrl}/svc/core/api/v1/organizations/${loginStatus.organizationId}/apps`;
     const response = await axios.get(url, { headers: { Authorization: `Bearer ${await authService.getAccessToken()}` } });
     artifactRegistryBaseUrl = response.data.content.filter((c: IApp) => c.app.key === 'corvina-app-artifact-registry').map((c: IApp) => c.app.manifest.baseUrl);
   }
@@ -89,7 +81,7 @@ const getArtifactRegistryBaseUrl = async (): Promise<string | undefined> => {
 };
 
 export const searchArtifacts = async (query: ISearchArtifactsRequest): Promise<IPage<IArtifact>> => {
-  const url = `${await getArtifactRegistryBaseUrl()}/${authService.status.instanceId}/${authService.status.organizationId}/artifacts/search`;
+  const url = `${await getArtifactRegistryBaseUrl()}/${loginStatus.instanceId}/${loginStatus.organizationId}/artifacts/search`;
   const response = await axios.post(url, query, { headers: { Authorization: `Bearer ${await authService.getAccessToken()}` } });
   return response.data;
 };
@@ -100,7 +92,7 @@ export const postArtifact = async (
   abortController?: AbortController
 ): Promise<IArtifact> => {
   // check if repository with same artifact name already exists
-  const repositoriesUrl = `${await getArtifactRegistryBaseUrl()}/${authService.status.instanceId}/${authService.status.organizationId}/repositories`;
+  const repositoriesUrl = `${await getArtifactRegistryBaseUrl()}/${loginStatus.instanceId}/${loginStatus.organizationId}/repositories`;
   const response = (
     await axios.get(repositoriesUrl, {
       params: {
@@ -109,7 +101,7 @@ export const postArtifact = async (
       headers: { Authorization: `Bearer ${await authService.getAccessToken()}` },
     })
   ).data;
-  const repositories = assertIPageIRepository(response).content.filter((r) => r.name === artifact.repositoryName);
+  const repositories = assertIPageIRepository(response).content.filter((r: IRepository) => r.name === artifact.repositoryName);
   if (repositories.length === 0) {
     // post the new repository
     const formData = new FormData();
@@ -213,7 +205,7 @@ export const downloadArtifact = async (
   progressCallback?: (progress: number) => void,
   abortController?: AbortController
 ): Promise<void> => {
-  const url = `${await getArtifactRegistryBaseUrl()}/${authService.status.instanceId}/${authService.status.organizationId}/artifacts/${artifactId}/content`;
+  const url = `${await getArtifactRegistryBaseUrl()}/${loginStatus.instanceId}/${loginStatus.organizationId}/artifacts/${artifactId}/content`;
   const resolvedPath = path.resolve(localPath);
   const writer = fs.createWriteStream(localPath);
 
@@ -234,10 +226,12 @@ export const downloadArtifact = async (
   return new Promise((resolve, reject) => {
     writer.on('finish', () => {
       console.log(`Download of artifact ${artifactId} to file ${resolvedPath} completed`);
+      writer.close();
       resolve();
     });
     writer.on('error', (error) => {
       console.log(`Error downloading artifact ${artifactId} to file ${resolvedPath}`, error);
+      writer.close();
       reject(error);
     });
   });

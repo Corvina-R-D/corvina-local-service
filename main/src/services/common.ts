@@ -1,0 +1,30 @@
+export interface IPage<T> {
+  number: number;
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  last: boolean;
+  content: T[];
+}
+
+export interface ILoginStatus {
+  logged: boolean;
+  vpnLogged?: boolean;
+  username: string;
+  organization: string;
+  orgResourceId: string;
+  organizationId: string | null;
+  instanceId: string;
+  lastError: string;
+}
+
+export const loginStatus: ILoginStatus = {
+  logged: false,
+  vpnLogged: false,
+  username: '',
+  organization: '',
+  orgResourceId: '',
+  lastError: '',
+  instanceId: '',
+  organizationId: null,
+};

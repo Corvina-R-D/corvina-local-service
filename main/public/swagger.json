@@ -307,6 +307,38 @@
         "x-nestia-namespace": "artifact-registry.jobs.cancelJob",
         "x-nestia-jsDocTags": []
       }
+    },
+    "/vpn/gateways": {
+      "get": {
+        "tags": [],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "",
+            "schema": {
+              "$ref": "#/components/schemas/IVPNGatewayIn"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IPage_lt_IVPNGateway_gt_"
+                }
+              }
+            },
+            "x-nestia-encrypted": false
+          }
+        },
+        "description": "Get VPN gateways",
+        "x-nestia-namespace": "vpn.gateways.gateways",
+        "x-nestia-jsDocTags": []
+      }
     }
   },
   "components": {
@@ -318,6 +350,11 @@
             "type": "boolean",
             "nullable": false,
             "x-typia-required": true
+          },
+          "vpnLogged": {
+            "type": "boolean",
+            "nullable": false,
+            "x-typia-required": false
           },
           "username": {
             "type": "string",
@@ -641,6 +678,202 @@
         "nullable": false,
         "required": [
           "localPath"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "IVPNGatewayIn": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "number",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "pageSize": {
+            "type": "number",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "all",
+              "online",
+              "offline",
+              "in-use"
+            ],
+            "nullable": false,
+            "x-typia-required": false
+          },
+          "nameFilter": {
+            "type": "string",
+            "nullable": false,
+            "x-typia-required": false
+          },
+          "sortDir": {
+            "type": "string",
+            "enum": [
+              "ASC",
+              "DESC"
+            ],
+            "nullable": false,
+            "x-typia-required": false
+          }
+        },
+        "nullable": false,
+        "required": [
+          "page",
+          "pageSize"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "IPage_lt_IVPNGateway_gt_": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "number",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "totalPages": {
+            "type": "number",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "totalElements": {
+            "type": "number",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "size": {
+            "type": "number",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "last": {
+            "type": "boolean",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IVPNGateway",
+              "x-typia-required": true
+            },
+            "nullable": false,
+            "x-typia-required": true
+          }
+        },
+        "nullable": false,
+        "required": [
+          "number",
+          "totalPages",
+          "totalElements",
+          "size",
+          "last",
+          "content"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "IVPNGateway": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "all",
+              "online",
+              "offline",
+              "in-use"
+            ],
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "otpRequired": {
+            "type": "boolean",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IVPNEndpoint",
+              "x-typia-required": true
+            },
+            "nullable": false,
+            "x-typia-required": true
+          }
+        },
+        "nullable": false,
+        "required": [
+          "deviceId",
+          "name",
+          "status",
+          "otpRequired",
+          "endpoints"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "IVPNEndpoint": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "deviceId": {
+            "type": "string",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": false,
+            "x-typia-required": true
+          },
+          "connectedUsers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/__type.o2",
+              "x-typia-required": true
+            },
+            "nullable": false,
+            "x-typia-required": true
+          }
+        },
+        "nullable": false,
+        "required": [
+          "id",
+          "deviceId",
+          "name",
+          "connectedUsers"
+        ],
+        "x-typia-jsDocTags": []
+      },
+      "__type.o2": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": false,
+            "x-typia-required": true
+          }
+        },
+        "nullable": false,
+        "required": [
+          "name"
         ],
         "x-typia-jsDocTags": []
       }

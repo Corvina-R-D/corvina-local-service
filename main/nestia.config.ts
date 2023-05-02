@@ -6,6 +6,7 @@ const config: INestiaConfig = {
     compilerOptions: {
       module: "commonjs",
       allowSyntheticDefaultImports: true,
+      esModuleInterop: true, 
     },
     swagger: {
         output: "public/swagger.json",

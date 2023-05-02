@@ -5,28 +5,10 @@ import * as os from 'os';
 import * as qs from 'qs';
 import * as url from 'url';
 import * as envVariables from '../../../env-variables.json';
+import { loginStatus } from './common';
 
 const { realm, baseUrl, clientId, wellKnown } = envVariables;
 
-export interface ILoginStatus {
-  logged: boolean;
-  username: string;
-  organization: string;
-  orgResourceId: string;
-  organizationId: string | null;
-  instanceId: string;
-  lastError: string;
-}
-
-export const status: ILoginStatus = {
-  logged: false,
-  username: '',
-  organization: '',
-  orgResourceId: '',
-  lastError: '',
-  instanceId: '',
-  organizationId: null,
-};
 
 interface IWellKnownUris {
   authorization_endpoint: string;
@@ -43,7 +25,8 @@ interface IOrganization {
 
 const wellKnownUriMap = new Map<string, IWellKnownUris>();
 
-const redirectUri = 'http://localhost/callback/';
+export const redirectUri = 'http://localhost/callback/';
+export const selectOrgRedirectUri = 'http://localhost/selectOrgCallback/';
 
 const keytarService = 'electron-openid-oauth';
 const keytarAccount = os.userInfo().username;
@@ -63,12 +46,12 @@ export async function logout() {
   accessToken = null;
   profile = null;
 
-  status.logged = false;
-  status.username = '';
-  status.organization = '';
-  status.orgResourceId = '';
-  status.lastError = '';
-  status.organizationId = null;
+  loginStatus.logged = false;
+  loginStatus.username = '';
+  loginStatus.organization = '';
+  loginStatus.orgResourceId = '';
+  loginStatus.lastError = '';
+  loginStatus.organizationId = null;
 }
 
 export function getProfile(): any {
@@ -89,18 +72,28 @@ export async function getAuthenticationURL() {
   return `${(await getUris()).authorization_endpoint}?client_id=${clientId}&redirect_uri=${redirectUri}&response_mode=fragment&response_type=code&scope=openid`;
 }
 
-const fillStatusFromToken = async (token: string, loginOrg?: string) => {
-  const userOrganizations = await axios.get(`${baseUrl}/svc/core/api/v1/organizations/mine`, { headers: { Authorization: `Bearer ${token}` } });
-  const firstOrganization: IOrganization = userOrganizations.data
-    .filter((a: { resourceId: string }) => !loginOrg || a.resourceId === loginOrg)
-    .sort((a: { resourceId: string }, b: { resourceId: string }) => a.resourceId.localeCompare(b.resourceId))[0];
-  profile = jwtDecode(token);
-  status.username = profile.preferred_username;
-  status.organization = firstOrganization.label;
-  status.orgResourceId = firstOrganization.resourceId;
-  status.organizationId = firstOrganization.id.toString();
+export function getLoginSelectionUrl() {
+  return `${baseUrl}/#/organization?redirectTo=${selectOrgRedirectUri}`;
+}
 
-  status.instanceId = (await axios.get(`${baseUrl}/svc/core/api/v1/instance  `, { headers: { Authorization: `Bearer ${token}` } })).data.id;
+export class OrganizationSelectionRequiredException extends Error {};
+
+const fillStatusFromToken = async (token: string, loginOrg?: string) => {
+  profile = jwtDecode(token);
+  loginStatus.username = profile.preferred_username;
+  loginStatus.instanceId = (await axios.get(`${baseUrl}/svc/core/api/v1/instance  `, { headers: { Authorization: `Bearer ${token}` } })).data.id;
+
+  const userOrganizations = await axios.get(`${baseUrl}/svc/core/api/v1/organizations/mine`, { headers: { Authorization: `Bearer ${token}` } });
+  if (userOrganizations.data.length > 1 && loginOrg == undefined) {
+    throw new OrganizationSelectionRequiredException;
+  }
+  const firstOrganization: IOrganization = userOrganizations.data
+    .filter((a: { resourceId: string, id: string }) => !loginOrg || a.resourceId === loginOrg || a.id.toString() === loginOrg)
+    .sort((a: { resourceId: string }, b: { resourceId: string }) => a.resourceId.localeCompare(b.resourceId))[0];
+  loginStatus.organization = firstOrganization.label;
+  loginStatus.orgResourceId = firstOrganization.resourceId;
+  loginStatus.organizationId = firstOrganization.id.toString();
+
 };
 
 const exchangeRptToken = async (token: string) => {
@@ -116,7 +109,7 @@ const exchangeRptToken = async (token: string) => {
     data: qs.stringify({
       grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
       audience: 'corvina-platform',
-      permission: status.orgResourceId,
+      permission: loginStatus.orgResourceId,
     }),
   });
 
@@ -154,11 +147,11 @@ export async function refreshTokens() {
 
     await exchangeRptToken(accessToken);
 
-    status.logged = true;
-    status.lastError = '';
+    loginStatus.logged = true;
+    loginStatus.lastError = '';
   } catch (error) {
     await logout();
-    status.lastError = <string>error;
+    loginStatus.lastError = <string>error;
 
     throw error;
   }
@@ -187,18 +180,34 @@ export async function loadTokens(callbackURL: string) {
 
   try {
     const response = await axios(options);
-
     saveAccessToken(response.data.access_token);
-    await fillStatusFromToken(accessToken);
+
+    await loadRptToken();
+  } catch (error) {
+    if (!(error instanceof OrganizationSelectionRequiredException)) {
+      await logout();
+
+      loginStatus.lastError = <string>error;
+    }
+
+    throw error;
+  }
+}
+
+export async function loadRptToken(selectedOrganization?: string) {
+  try {
+    await fillStatusFromToken(accessToken, selectedOrganization);
     // request rpt token
     await exchangeRptToken(accessToken);
 
-    status.logged = true;
-    status.lastError = '';
+    loginStatus.logged = true;
+    loginStatus.lastError = '';
   } catch (error) {
-    await logout();
+    if (!(error instanceof OrganizationSelectionRequiredException)) {
+      await logout();
 
-    status.lastError = <string>error;
+      loginStatus.lastError = <string>error;
+    }
 
     throw error;
   }
@@ -215,7 +224,7 @@ export async function getAccessToken(): Promise<any> {
   if (refreshInterval == undefined) {
     // ensure the token is kept refreshed while logged ins
     refreshInterval = setInterval(async () => {
-        if (status.logged) {
+        if (loginStatus.logged) {
           try {
             await getAccessToken();
           } catch (error) {

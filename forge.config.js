@@ -1,5 +1,8 @@
 module.exports = {
-  packagerConfig: {},
+  packagerConfig: {
+    dir: "main/dist",
+    ignore: ["main/src", "main/public"]
+  },
   rebuildConfig: {},
   makers: [
     {
@@ -18,6 +21,22 @@ module.exports = {
       name: '@electron-forge/maker-rpm',
       config: {},
     },
+  ],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-bitbucket',
+      config: {
+        replaceExistingFiles: true,
+        repository: {
+          owner: 'exorint',
+          name: 'corvina-local-service'
+        },
+        auth: {
+          username: process.env.BITBUCKET_USERNAME, // string
+          appPassword: process.env.BITBUCKET_APP_PASSWORD // string
+        }
+      }
+    }
   ],
   plugins: [
     {

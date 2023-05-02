@@ -1,10 +1,12 @@
 import * as authProcess from './auth-process';
 import * as artifactsService from './services/artifacts-service';
-import * as authService from './services/auth-service';
+import * as vpnService from './services/vpn-service';
 //import YamlContent from './swagger.yaml';
 import { TypedBody, TypedParam, TypedQuery, TypedRoute } from "@nestia/core";
 import { Controller } from "@nestjs/common";
-import { IArtifact, IPage } from './services/artifacts-service';
+import { IArtifact } from './services/artifacts-service';
+import { ILoginStatus, IPage, loginStatus } from './services/common';
+import { IVPNGatewayIn } from './services/vpn-service';
 
 
 @Controller("/")
@@ -14,8 +16,8 @@ export class AppController {
      * Returns current login status
      */
     @TypedRoute.Get("/status")
-    public async status(): Promise<authService.ILoginStatus> {
-      return authService.status;
+    public async status(): Promise<ILoginStatus> {
+      return loginStatus;
     }
 
     /**
@@ -89,6 +91,15 @@ export class AppController {
     @TypedRoute.Delete("/artifact-registry/jobs/:jobId")
     public cancelJob(@TypedParam("jobId") jobId : string): artifactsService.IJobStatus | undefined {
         return artifactsService.cancelJob(jobId);
+    }
+
+
+    /**
+     * Get VPN gateways
+     */
+    @TypedRoute.Get("/vpn/gateways")
+    public gateways(@TypedQuery() query : IVPNGatewayIn ): Promise<IPage<vpnService.IVPNGateway>> {
+        return vpnService.getGateways(query);
     }
     
     

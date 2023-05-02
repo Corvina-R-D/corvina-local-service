@@ -1,7 +1,7 @@
 {
-  "name": "Corvina local server",
+  "name": "CorvinaLocalServer",
   "version": "1.0.0",
-  "description": "",
+  "description": "Local proxy interface for corvina APIs",
   "main": "main/dist/main.js",
   "scripts": {
     "build": "cd main && vite build",
@@ -13,6 +13,7 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
+    "publish": "electron-forge publish",
     "prepare": "ts-patch install"
   },
   "keywords": [],
@@ -25,10 +26,10 @@
     "@electron-forge/maker-squirrel": "^6.1.1",
     "@electron-forge/maker-zip": "^6.1.1",
     "@electron-forge/plugin-vite": "^6.1.1",
+    "@electron-forge/publisher-bitbucket": "^6.1.1",
     "@electron/remote": "^2.0.9",
     "@modyfi/vite-plugin-yaml": "^1.0.4",
     "@nestia/sdk": "^1.1.0",
-    "@types/axios": "^0.14.0",
     "@types/express": "^4.17.17",
     "@types/jwt-decode": "^3.1.0",
     "@types/keytar": "^4.4.2",
