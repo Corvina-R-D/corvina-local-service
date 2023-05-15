@@ -339,6 +339,58 @@
         "x-nestia-namespace": "vpn.gateways.gateways",
         "x-nestia-jsDocTags": []
       }
+    },
+    "/vpn/endpoints/{endpointId}/connect": {
+      "get": {
+        "tags": [],
+        "parameters": [
+          {
+            "name": "endpointId",
+            "in": "path",
+            "description": "",
+            "schema": {
+              "type": "string",
+              "nullable": false
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "x-nestia-encrypted": false
+          }
+        },
+        "description": "",
+        "x-nestia-namespace": "vpn.endpoints.connect.connectToEndpoint",
+        "x-nestia-jsDocTags": []
+      }
+    },
+    "/vpn/endpoints/{endpointId}/disconnect": {
+      "get": {
+        "tags": [],
+        "parameters": [
+          {
+            "name": "endpointId",
+            "in": "path",
+            "description": "",
+            "schema": {
+              "type": "string",
+              "nullable": false
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "x-nestia-encrypted": false
+          }
+        },
+        "description": "",
+        "x-nestia-namespace": "vpn.endpoints.disconnect.disconnectFromEndpoint",
+        "x-nestia-jsDocTags": []
+      }
     }
   },
   "components": {

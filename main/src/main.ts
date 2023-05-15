@@ -1,4 +1,4 @@
-import { BrowserWindow, Menu, Tray, app, ipcMain } from 'electron';
+import { BrowserWindow, Menu, Tray, app, ipcMain, shell } from 'electron';
 
 import * as path from 'path';
 import { createAuthWindow, createLogoutWindow } from './auth-process';
@@ -22,6 +22,7 @@ app.on('ready', async () => {
     { label: 'Quit', click: () => app.quit() },
     { label: 'Login', click: () => createAuthWindow() },
     { label: 'Logout', click: () => createLogoutWindow() },
+    { label: 'Doc', click: () => { shell.openExternal(`http://localhost:${port}/swagger-ui`) }  },
   ]);
   tray.setToolTip('Corvina local service');
   tray.setContextMenu(contextMenu);

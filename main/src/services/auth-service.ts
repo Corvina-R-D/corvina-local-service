@@ -21,6 +21,7 @@ interface IOrganization {
   id: number;
   label: string;
   resourceId: string;
+  hostname: string;
 }
 
 const wellKnownUriMap = new Map<string, IWellKnownUris>();
@@ -52,6 +53,7 @@ export async function logout() {
   loginStatus.orgResourceId = '';
   loginStatus.lastError = '';
   loginStatus.organizationId = null;
+  loginStatus.hostname = '';
 }
 
 export function getProfile(): any {
@@ -93,6 +95,7 @@ const fillStatusFromToken = async (token: string, loginOrg?: string) => {
   loginStatus.organization = firstOrganization.label;
   loginStatus.orgResourceId = firstOrganization.resourceId;
   loginStatus.organizationId = firstOrganization.id.toString();
+  loginStatus.organizationId = firstOrganization.hostname;
 
 };
 

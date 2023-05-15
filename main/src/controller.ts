@@ -101,7 +101,17 @@ export class AppController {
     public gateways(@TypedQuery() query : IVPNGatewayIn ): Promise<IPage<vpnService.IVPNGateway>> {
         return vpnService.getGateways(query);
     }
-    
+
+    @TypedRoute.Get("/vpn/endpoints/:endpointId/connect")
+    public connectToEndpoint(@TypedParam("endpointId") endpointId : string ): Promise<any> {
+        return vpnService.connectToEndpoint(endpointId);
+    }
+
+    @TypedRoute.Get("/vpn/endpoints/:endpointId/disconnect")
+    public disconnectFromEndpoint(@TypedParam("endpointId") endpointId : string ): Promise<any> {
+        return vpnService.disconnectFromEndpoint(endpointId);
+    }
+
     
   }
 
