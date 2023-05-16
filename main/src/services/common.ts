@@ -8,8 +8,8 @@ export interface IPage<T> {
 }
 
 export interface ILoginStatus {
-  logged: boolean;
-  vpnLogged?: boolean;
+  loggedIn: boolean;
+  vpnLoggedIn?: boolean;
   username: string;
   organization: string;
   orgResourceId: string;
@@ -20,8 +20,8 @@ export interface ILoginStatus {
 }
 
 export const loginStatus: ILoginStatus = {
-  logged: false,
-  vpnLogged: false,
+  loggedIn: false,
+  vpnLoggedIn: false,
   username: '',
   organization: '',
   orgResourceId: '',

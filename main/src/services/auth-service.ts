@@ -47,7 +47,7 @@ export async function logout() {
   accessToken = null;
   profile = null;
 
-  loginStatus.logged = false;
+  loginStatus.loggedIn = false;
   loginStatus.username = '';
   loginStatus.organization = '';
   loginStatus.orgResourceId = '';
@@ -95,7 +95,7 @@ const fillStatusFromToken = async (token: string, loginOrg?: string) => {
   loginStatus.organization = firstOrganization.label;
   loginStatus.orgResourceId = firstOrganization.resourceId;
   loginStatus.organizationId = firstOrganization.id.toString();
-  loginStatus.organizationId = firstOrganization.hostname;
+  loginStatus.hostname = firstOrganization.hostname;
 
 };
 
@@ -150,7 +150,7 @@ export async function refreshTokens() {
 
     await exchangeRptToken(accessToken);
 
-    loginStatus.logged = true;
+    loginStatus.loggedIn = true;
     loginStatus.lastError = '';
   } catch (error) {
     await logout();
@@ -203,7 +203,7 @@ export async function loadRptToken(selectedOrganization?: string) {
     // request rpt token
     await exchangeRptToken(accessToken);
 
-    loginStatus.logged = true;
+    loginStatus.loggedIn = true;
     loginStatus.lastError = '';
   } catch (error) {
     if (!(error instanceof OrganizationSelectionRequiredException)) {
@@ -227,7 +227,7 @@ export async function getAccessToken(): Promise<any> {
   if (refreshInterval == undefined) {
     // ensure the token is kept refreshed while logged ins
     refreshInterval = setInterval(async () => {
-        if (loginStatus.logged) {
+        if (loginStatus.loggedIn) {
           try {
             await getAccessToken();
           } catch (error) {

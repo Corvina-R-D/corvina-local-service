@@ -1,5 +1,6 @@
 import assert from 'assert';
 import axios from 'axios';
+import typia from 'typia';
 import { baseUrl } from '../../../env-variables.json';
 import * as authService from './auth-service';
 import { IPage, loginStatus } from './common';
@@ -19,18 +20,24 @@ export interface IVPNGatewayIn {
 }
 
 export interface IVPNEndpoint {
-  id: string;
   deviceId: string;
   name: string;
   connectedUsers: {name: string}[];
 }
 
 export interface IVPNGateway {
+  gatewayId: string;
   deviceId: string;
   name: string;
   status: IVpnGatewayStatus;
   otpRequired: boolean;
   endpoints: IVPNEndpoint[];
+}
+
+export interface IVPNConnectionResult {
+  connections: {
+    device_ip_address: string
+  }[];
 }
 
 export const getGateways = async (query: IVPNGatewayIn) : Promise<IPage<IVPNGateway>> => {
@@ -43,7 +50,7 @@ export const getGateways = async (query: IVPNGatewayIn) : Promise<IPage<IVPNGate
   return response.data;
 }
 
-export const connectToEndpoint = async (endpointId: string) => {
+export const connectToEndpoint = async (gatewayId: string, endpointId: string) => {
   if (vpnappService.appStatus !== vpnappService.VPNAppStatus.DETECTED_AND_RUNNING) {
     throw new Error("VPN companion app is not running or has not been detected");
   }
@@ -60,10 +67,22 @@ export const connectToEndpoint = async (endpointId: string) => {
   if (vpnappService.connectionStatus.state != vpnappService.VPNAppState.CONNECTED) {
     throw new Error("VPN companion could not connect");
   }
-  
+ 
+  const result = await axios.get(`${baseUrl}/svc/vpn2/api/v1/connections/${loginStatus.orgResourceId}/${gatewayId}/endpoints/${endpointId}/connect`, 
+  {
+    params: { clientOs: 'Win', onlyGateway: false },
+    headers: { Authorization: `Bearer ${await authService.getAccessToken()}` }
+  });
+  const connections = typia.assert<IVPNConnectionResult>(result.data);
 
+  vpnappService.syncRoutes(connections);  
 }
 
 
-export const disconnectFromEndpoint = async (endpointId: string) => {
+export const disconnectFromEndpoint = async (gatewayId: string, endpointId: string) => {
+  const result = await axios.get(`${baseUrl}/svc/vpn2/api/v1/connections/${loginStatus.orgResourceId}/${gatewayId}/endpoints/${endpointId}/disconnect`, 
+  {
+    params: { onlyGateway: false },
+    headers: { Authorization: `Bearer ${await authService.getAccessToken()}` }
+  });
 }

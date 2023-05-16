@@ -102,14 +102,14 @@ export class AppController {
         return vpnService.getGateways(query);
     }
 
-    @TypedRoute.Get("/vpn/endpoints/:endpointId/connect")
-    public connectToEndpoint(@TypedParam("endpointId") endpointId : string ): Promise<any> {
-        return vpnService.connectToEndpoint(endpointId);
+    @TypedRoute.Get("/vpn/gateway/:gatewayId/endpoints/:endpointId/connect")
+    public connectToEndpoint(@TypedParam("gatewayId") gatewayId : string, @TypedParam("endpointId") endpointId : string ): Promise<any> {
+        return vpnService.connectToEndpoint(gatewayId, endpointId);
     }
 
-    @TypedRoute.Get("/vpn/endpoints/:endpointId/disconnect")
-    public disconnectFromEndpoint(@TypedParam("endpointId") endpointId : string ): Promise<any> {
-        return vpnService.disconnectFromEndpoint(endpointId);
+    @TypedRoute.Get("/vpn/gateway/:gatewayId/endpoints/:endpointId/disconnect")
+    public disconnectFromEndpoint(@TypedParam("gatewayId") gatewayId : string, @TypedParam("endpointId") endpointId : string ): Promise<any> {
+        return vpnService.disconnectFromEndpoint(gatewayId, endpointId);
     }
 
     

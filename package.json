@@ -1,6 +1,6 @@
 {
   "name": "CorvinaLocalServer",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Local proxy interface for corvina APIs",
   "main": "main/dist/main.js",
   "scripts": {
@@ -76,6 +76,7 @@
     "semver": "^7.5.0",
     "semver-diff": "^4.0.0",
     "swagger-ui-express": "^4.6.2",
-    "typia": "^3.8.1"
+    "typia": "^3.8.1",
+    "win-ca": "^3.5.0"
   }
 }

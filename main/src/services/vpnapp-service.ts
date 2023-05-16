@@ -2,7 +2,9 @@ import axios from 'axios';
 import semverDiff from 'semver/functions/diff';
 import typia from 'typia';
 import { baseUrl } from '../../../env-variables.json';
+import * as authService from './auth-service';
 import { loginStatus } from './common';
+import { IVPNConnectionResult } from './vpn-service';
 
 export interface CompanionAppInfoDTO {
   requiredProductVersion?: string;
@@ -148,8 +150,8 @@ const appPollTimeout = () => {
 };
 
 
-const setVpnAppPort = (port: number) => {
-  port = port;
+const setVpnAppPort = (_port: number) => {
+  port = _port;
 
   if (port > 0) {
     // found running
@@ -183,6 +185,7 @@ export const startVpnAppMonitoring = async () => {
   }
   const monitorFunction = async () => {
     if (port <= 0 || port == undefined) {
+      loginStatus.vpnLoggedIn = false;
       try {
         await detectApp();
         await getConnectionStatus();
@@ -202,6 +205,7 @@ export const startVpnAppMonitoring = async () => {
           console.log('Vpn app disconnected??', e);
           // force rediscover after error
           port = -1;
+          loginStatus.vpnLoggedIn = false;
         }
       }
     }
@@ -221,11 +225,12 @@ const stopVpnAppMonitoring = async () => {
 
 const testServiceIsRunning = async (hostname: string, port: number): Promise<VPNAppInfo | undefined> => {
   try {
-    let result: any = (await axios.get(`http://${hostname}:${port}/api/v1/info`, { timeout: 1000 })).data;
+    let result: any = (await axios.get(`https://${hostname}:${port}/api/v1/info`, { timeout: 1000 })).data;
     result.hostname = hostname;
     result.port = port;
     return typia.assert<VPNAppInfo>(result);
   } catch (e: any) {
+    console.log("???????", e?.message)
     if (e?.message?.match(/Network Error/)) {
       return { hostname, port, networkError: true };
     }
@@ -306,7 +311,7 @@ const detectApp = async (): Promise<void> => {
         const foundPort = resolvedResult.port;
         console.log('Found at port ', foundPort);
         hostname = h;
-        port = foundPort;
+        setVpnAppPort(foundPort)
         return;
       }
     }
@@ -320,7 +325,7 @@ const getConnectionStatus = async (): Promise<VPNAppConnectionStatus> => {
     return connectionStatus;
   }
 
-  const result = await axios.get(`http://${hostname}:${port}/api/v1/status`);
+  const result = await axios.get(`https://${hostname}:${port}/api/v1/status`);
   connectionStatus = typia.assert<VPNAppConnectionStatus>(result.data);
 
   if (connectionStatus) {
@@ -339,6 +344,12 @@ const getConnectionStatus = async (): Promise<VPNAppConnectionStatus> => {
     }
   }
 
+  if (connectionStatus.state == VPNAppState.CONNECTED) {
+    loginStatus.vpnLoggedIn = true;
+  } else {
+    loginStatus.vpnLoggedIn = false;
+  }
+  
   return connectionStatus;
 };
 
@@ -352,7 +363,7 @@ const doAction = async (params: Record<string, string>) => {
   for (let k in params) {
     urlEncodedParams.append(k, params[k]);
   }
-  return axios.post(`http://${hostname}:${port}/api/v1/cloud`, urlEncodedParams, config);
+  return axios.post(`https://${hostname}:${port}/api/v1/cloud`, urlEncodedParams, config);
 };
 
 const authWithApp = async ({ id = 'sb', url, type = 'user-pass', user, pass }: { id?: string; type?: string; url: string; user: string; pass: string }) => {
@@ -367,11 +378,15 @@ const authWithApp = async ({ id = 'sb', url, type = 'user-pass', user, pass }: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
   };
-  return axios.post(`http://${hostname}:${port}/api/v1/auth`, params, config);
+  return axios.post(`https://${hostname}:${port}/api/v1/auth`, params, config);
 };
 
 const getCredentials = async (logoutFirst = false): Promise<Credentials> => {
-  const result = await axios.post(`${baseUrl}/api/vpn2/credentials/request`, { name: loginStatus.username, domain: loginStatus.orgResourceId });
+  const result = await axios.post(`${baseUrl}/svc/vpn2/api/v1/credentials/request`, 
+    { name: loginStatus.username, domain: loginStatus.orgResourceId },
+    {
+      headers: { Authorization: `Bearer ${await authService.getAccessToken()}` }
+    });
   const credentials = typia.assert<Credentials>(result.data);
   return credentials;
 };
@@ -401,10 +416,10 @@ export const login = async ({ forceLogin = false }: { forceLogin: boolean }): Pr
     // In this way we can avoid endless reconnection loops if other user is already connected
     // const currentConfig : any = await VPNAppAxiosInstance.getConfigApp();
     // currentConfig.exitOnPingRestart = true;
-    const configResult = await axios.post(`http://${hostname}:${port}/api/v1/config`, { vpn: { exitOnPingRestart: true }, autoretry: true });
+    const configResult = await axios.post(`https://${hostname}:${port}/api/v1/config`, { vpn: { exitOnPingRestart: true }, autoretry: true });
 
     // pass authentication credentials to the app
-    const authResult = await authWithApp({ url: credentials.url, user: `${name}/${credentials.domain}`, pass: credentials.password });
+    const authResult = await authWithApp({ url: credentials.url, user: `${credentials.name}/${credentials.domain}`, pass: credentials.password });
 
     // start the app
     const startResult = await doAction({ action: 'start', force: forceLogin.toString() });
@@ -434,5 +449,9 @@ export const logout = async (): Promise<any> => {
     canceling = false;
   }
 };
+
+export const syncRoutes = async ( connections: IVPNConnectionResult ) => {
+  await doAction({ action: 'syncRoutes', ips: connections.connections.map(c => c.device_ip_address).join(',') });
+}
 
 startVpnAppMonitoring();

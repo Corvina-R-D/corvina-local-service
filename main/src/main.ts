@@ -12,6 +12,9 @@ import YamlContent from './swagger.yaml';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './exceptions.filter';
 
+// required to connect to local vpn client in https using the installed self-signed certificate
+require('win-ca');
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
