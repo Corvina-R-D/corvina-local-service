@@ -230,7 +230,6 @@ const testServiceIsRunning = async (hostname: string, port: number): Promise<VPN
     result.port = port;
     return typia.assert<VPNAppInfo>(result);
   } catch (e: any) {
-    console.log("???????", e?.message)
     if (e?.message?.match(/Network Error/)) {
       return { hostname, port, networkError: true };
     }

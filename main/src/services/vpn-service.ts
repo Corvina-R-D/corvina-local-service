@@ -1,4 +1,3 @@
-import assert from 'assert';
 import axios from 'axios';
 import typia from 'typia';
 import { baseUrl } from '../../../env-variables.json';
@@ -23,6 +22,9 @@ export interface IVPNEndpoint {
   deviceId: string;
   name: string;
   connectedUsers: {name: string}[];
+  currentIpAddress ?: string;
+  connected ?: boolean;
+
 }
 
 export interface IVPNGateway {
@@ -42,7 +44,6 @@ export interface IVPNConnectionResult {
 
 export const getGateways = async (query: IVPNGatewayIn) : Promise<IPage<IVPNGateway>> => {
   const url = `${baseUrl}/svc/vpn2/api/v1/gateways/${loginStatus.orgResourceId}`;
-  assert(url == "https://app.corvina.cloud/svc/vpn2/api/v1/gateways/exor");
   const response = await axios.get(url, {
     params: query,
     headers: { Authorization: `Bearer ${await authService.getAccessToken()}` }
