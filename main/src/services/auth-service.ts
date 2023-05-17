@@ -154,9 +154,7 @@ export async function refreshTokens() {
     loginStatus.lastError = '';
   } catch (error) {
     await logout();
-    loginStatus.lastError = <string>error;
-
-    throw error;
+    loginStatus.lastError = (error as any).toString();
   }
 }
 

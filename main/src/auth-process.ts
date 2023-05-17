@@ -90,7 +90,6 @@ export async function createLogoutWindow() {
     session: { webRequest },
   } = logoutWindow.webContents;
   webRequest.onCompleted({ urls: ['https://*/*logout-confirm*', 'https://*/*logout_response*'] }, async ({ url }) => {
-    console.log('+++++++++++++++++++++++++++++++++++++++++++++++', url);
     await authService.logout();
     if (logoutWindow != null) {
       logoutWindow.close();
