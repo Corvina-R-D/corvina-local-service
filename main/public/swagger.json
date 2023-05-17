@@ -460,8 +460,8 @@
           },
           "hostname": {
             "type": "string",
-            "nullable": false,
-            "x-typia-required": true
+            "nullable": true,
+            "x-typia-required": false
           }
         },
         "nullable": false,
@@ -472,8 +472,7 @@
           "orgResourceId",
           "organizationId",
           "instanceId",
-          "lastError",
-          "hostname"
+          "lastError"
         ],
         "x-typia-jsDocTags": []
       },
@@ -930,6 +929,16 @@
             },
             "nullable": false,
             "x-typia-required": true
+          },
+          "currentIpAddress": {
+            "type": "string",
+            "nullable": false,
+            "x-typia-required": false
+          },
+          "connected": {
+            "type": "boolean",
+            "nullable": false,
+            "x-typia-required": false
           }
         },
         "nullable": false,

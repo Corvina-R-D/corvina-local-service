@@ -16,7 +16,7 @@ export interface ILoginStatus {
   organizationId: string | null;
   instanceId: string;
   lastError: string;
-  hostname: string;
+  hostname: string | null;
 }
 
 export const loginStatus: ILoginStatus = {

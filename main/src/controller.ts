@@ -33,7 +33,7 @@ export class AppController {
      */
     @TypedRoute.Get("/logout")
     public async logout(): Promise<void> {
-      authProcess.createLogoutWindow;
+      authProcess.createLogoutWindow();
     }
 
     /**
