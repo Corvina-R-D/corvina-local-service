@@ -113,7 +113,7 @@ export const postArtifact = async (
     }
     formData.append('name', artifact.repositoryName);
     formData.append('type', artifact.type);
-    formData.append('file', fs.createReadStream(artifact.localPath));
+    formData.append('file', fs.createReadStream(artifact.localPath, { highWaterMark: 1024}));
     const result = (
       await axios.post(repositoriesUrl, formData, {
         headers: { ...formData.getHeaders(), Authorization: `Bearer ${await authService.getAccessToken()}` },
@@ -122,7 +122,7 @@ export const postArtifact = async (
           const percentCompleted = <number>progressEvent.progress*100;
           if (progressCallback) progressCallback(percentCompleted);
         },
-      })
+        })
     ).data;
     const parsedResult = assertIRepository(result);
     // get the latest pushed artifact
@@ -138,7 +138,7 @@ export const postArtifact = async (
     formData.append('labels', '{}'); // is required
   }
   formData.append('type', artifact.type);
-  formData.append('file', fs.createReadStream(artifact.localPath));
+  formData.append('file', fs.createReadStream(artifact.localPath,  { highWaterMark: 1024}));
   const result = (
     await axios.post(artifactUrl, formData, {
       headers: { ...formData.getHeaders(), Authorization: `Bearer ${await authService.getAccessToken()}` },
@@ -147,7 +147,7 @@ export const postArtifact = async (
         const percentCompleted = <number>progressEvent.progress*100;
         if (progressCallback) progressCallback(percentCompleted);
       },
-    })
+  })
   ).data;
   // fix string size
   result.size = parseInt(result.size, 10);
