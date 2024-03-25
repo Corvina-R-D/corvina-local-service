@@ -3,5 +3,6 @@
   "clientId": "corvina-web-portal",
   "wellKnown": "https://auth.corvina.io/auth/realms/exor/.well-known/openid-configuration",
   "baseUrl": "https://app.corvina.io",
-  "debugEnabled": true
+  "debugEnabled": false,
+  "realm": "exor"
 }

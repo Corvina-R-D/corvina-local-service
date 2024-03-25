@@ -1,0 +1,50 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+
+
+
+
+jobs:
+  build:
+    runs-on: windows-2022
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+              
+      - name: Setup default environment
+        run: cp env-variables.json.template env-variables.json
+
+      - name: Install dependencies
+        run: npm ci --force
+
+      - name: Build swagger
+        run: npm run build:types
+
+      - name: Packaging
+        run: npm run make
+      
+      - name: Publish
+        run: npm run publish
+        

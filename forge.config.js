@@ -24,19 +24,29 @@ module.exports = {
   ],
   publishers: [
     {
-      name: '@electron-forge/publisher-bitbucket',
+      name: '@electron-forge/publisher-github',
       config: {
-        replaceExistingFiles: true,
         repository: {
-          owner: 'exorint',
+          owner: 'Corvina-R-D',
           name: 'corvina-local-service'
         },
-        auth: {
-          username: process.env.BITBUCKET_USERNAME, // string
-          appPassword: process.env.BITBUCKET_APP_PASSWORD // string
-        }
+        prerelease: true
       }
     }
+    // {
+    //   name: '@electron-forge/publisher-bitbucket',
+    //   config: {
+    //     replaceExistingFiles: true,
+    //     repository: {
+    //       owner: 'exorint',
+    //       name: 'corvina-local-service'
+    //     },
+    //     auth: {
+    //       username: process.env.BITBUCKET_USERNAME, // string
+    //       appPassword: process.env.BITBUCKET_APP_PASSWORD // string
+    //     }
+    //   }
+    // }
   ],
   plugins: [
     {
