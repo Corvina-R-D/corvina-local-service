@@ -36,6 +36,13 @@ let accessToken: any = null;
 let accessTokenExpiration: number = 0;
 let profile: any = null;
 
+/** Maps from numeric organization id to string organization id  */
+let orgIdCache = new Map<number, string>();
+
+export function getOrgResourceId(orgId: number) {
+  return orgIdCache.get(orgId);
+}
+
 const saveAccessToken = (token: string) => {
   const decoded = jwtDecode(token) as JwtPayload;
   accessTokenExpiration = <number>decoded.exp * 1000 - 60000;
@@ -70,8 +77,8 @@ export async function getUris(r: string = realm): Promise<IWellKnownUris> {
   return <IWellKnownUris>wellKnownUris;
 }
 
-export async function getAuthenticationURL() {
-  return `${(await getUris()).authorization_endpoint}?client_id=${clientId}&redirect_uri=${redirectUri}&response_mode=fragment&response_type=code&scope=openid`;
+export async function getAuthenticationURL(orgScope?: string) {
+  return `${(await getUris()).authorization_endpoint}?client_id=${clientId}&redirect_uri=${redirectUri}&response_mode=fragment&response_type=code&scope=openid${orgScope ? " org:" + orgScope :  " org:*"}`;
 }
 
 export function getLoginSelectionUrl() {
@@ -86,6 +93,12 @@ const fillStatusFromToken = async (token: string, loginOrg?: string) => {
   loginStatus.instanceId = (await axios.get(`${baseUrl}/svc/core/api/v1/instance  `, { headers: { Authorization: `Bearer ${token}` } })).data.id;
 
   const userOrganizations = await axios.get(`${baseUrl}/svc/core/api/v1/organizations/mine`, { headers: { Authorization: `Bearer ${token}` } });
+
+  // populate orgIdCache
+  userOrganizations.data.forEach((org: IOrganization) => {
+    orgIdCache.set(org.id, org.resourceId);
+  });
+
   if (userOrganizations.data.length > 1 && loginOrg == undefined) {
     throw new OrganizationSelectionRequiredException;
   }
@@ -99,26 +112,6 @@ const fillStatusFromToken = async (token: string, loginOrg?: string) => {
 
 };
 
-const exchangeRptToken = async (token: string) => {
-  const tokenEndpoint = (await getUris()).token_endpoint;
-  // request rpt token
-  const rptResponse = await axios({
-    method: 'POST',
-    url: tokenEndpoint,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'content-type': 'application/x-www-form-urlencoded',
-    },
-    data: qs.stringify({
-      grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
-      audience: 'corvina-platform',
-      permission: loginStatus.orgResourceId,
-    }),
-  });
-
-  saveAccessToken(rptResponse.data.access_token);
-  await keytar.setPassword(keytarService, keytarAccount, rptResponse.data.refresh_token);
-};
 
 export async function refreshTokens() {
   const refreshToken = await keytar.getPassword(keytarService, keytarAccount);
@@ -147,8 +140,6 @@ export async function refreshTokens() {
 
     // request rpt token
     await fillStatusFromToken(accessToken, loginOrg);
-
-    await exchangeRptToken(accessToken);
 
     loginStatus.loggedIn = true;
     loginStatus.lastError = '';
@@ -183,32 +174,52 @@ export async function loadTokens(callbackURL: string) {
     const response = await axios(options);
     saveAccessToken(response.data.access_token);
 
-    await loadRptToken();
+    // try to decode token and extract login org
+    let loginOrg = undefined;
+    try {
+      const permissions = JSON.parse( Buffer.from(response.data.access_token.split(".")[1], 'base64').toString() ).authorization.permissions;
+      if (permissions.length == 1) {
+        loginOrg = permissions[0].rsname;
+        console.log("Selected organization: ", loginOrg);
+      }
+    } catch (error) {
+      console.warn('Cannot extract a valid login org from current token', error);
+    }
+
+    await loadOrgToken(loginOrg);
   } catch (error) {
     if (!(error instanceof OrganizationSelectionRequiredException)) {
       await logout();
 
       loginStatus.lastError = <string>error;
     }
+    // need to select an organization first.. keep waiting
 
     throw error;
   }
 }
 
-export async function loadRptToken(selectedOrganization?: string) {
+function tokenToString(accessToken: string) : string {
+  try {
+    return JSON.parse( Buffer.from(accessToken.split(".")[1], 'base64').toString() );
+  } catch(err) {}
+  return '';
+}
+
+export async function loadOrgToken(selectedOrganization?: string) {
   try {
     await fillStatusFromToken(accessToken, selectedOrganization);
-    // request rpt token
-    await exchangeRptToken(accessToken);
 
     loginStatus.loggedIn = true;
     loginStatus.lastError = '';
+    console.log("Successfully loaded token!");// tokenToString(accessToken));
   } catch (error) {
     if (!(error instanceof OrganizationSelectionRequiredException)) {
       await logout();
 
       loginStatus.lastError = <string>error;
     }
+    // need to select an organization first.. keep waiting
 
     throw error;
   }

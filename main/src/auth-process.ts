@@ -2,6 +2,9 @@ import { BrowserWindow } from 'electron';
 import * as artifactsService from './services/artifacts-service';
 import * as authService from './services/auth-service';
 // import { createAppWindow } from '../main/app-process';
+import * as envVariables from '../../env-variables.json';
+const { debugEnabled } = envVariables;
+
 
 let loginWindow: BrowserWindow | null = null;
 let logoutWindow: BrowserWindow | null = null;
@@ -31,7 +34,9 @@ export async function createAuthWindow() {
   });
 
   loginWindow.loadURL(await authService.getAuthenticationURL());
-  //loginWindow.webContents.openDevTools();
+  if (debugEnabled) {
+    loginWindow.webContents.openDevTools();
+  }
 
   const {
     session: { webRequest },
@@ -42,8 +47,7 @@ export async function createAuthWindow() {
   }, async ({ url }) => {
     if (url.startsWith(authService.selectOrgRedirectUri)) {
       const organizationId = (new URL(url)).searchParams.get('org')?.split(",")[1];
-      await authService.loadRptToken(organizationId);
-      return destroyAuthWin();
+      loginWindow!.loadURL(await authService.getAuthenticationURL(authService.getOrgResourceId(parseInt(organizationId!))));
     } else {
       try {
         await authService.loadTokens(url);
@@ -60,7 +64,6 @@ export async function createAuthWindow() {
   });
 
   webRequest.onCompleted({ urls: ['https://*/*logout-confirm*', 'https://*/*logout_response*'] }, async ({ url }) => {
-    console.log('----------------------------------------------', url);
     await authService.logout();
     if (logoutWindow != null) {
       logoutWindow.close();

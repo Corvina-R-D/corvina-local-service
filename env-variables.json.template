@@ -2,5 +2,6 @@
   "auth0Domain": "auth.corvina.io/auth/",
   "clientId": "corvina-web-portal",
   "wellKnown": "https://auth.corvina.io/auth/realms/exor/.well-known/openid-configuration",
-  "baseUrl": "https://app.corvina.io"
+  "baseUrl": "https://app.corvina.io",
+  "debugEnabled": true
 }

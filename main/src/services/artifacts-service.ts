@@ -48,7 +48,7 @@ export interface IRepository {
   id: string;
   author?: string;
   uploadedAt: string;
-  labels?: Record<string, string>;
+  labels?: Record<string, string> | null;
   name: string;
   resourceUrl: string;
   versions?: string[] | null;
@@ -191,7 +191,11 @@ export const postArtifactAsync = (artifact: IArtifactIn): IJobStatus => {
         status.message = 'Upload cancelled';
         status.status = 'cancelled';
       } else {
-        status.message = `Error uploading: ${error}`;
+        console.log("Error uploading: ", error);
+        status.message = `Error uploading: ${error}.`;
+        if (error?.response?.data) {
+          status.message += ` ${JSON.stringify(error.response.data)}`;
+        }
         status.status = 'error';
       }
     });
@@ -276,6 +280,9 @@ export const downloadArtifactAsync = (artifactId: string, localPath: string): IJ
         status.status = 'cancelled';
       } else {
         status.message = `Error downloading: ${error}`;
+        if (error?.response?.data) {
+          status.message += ` ${JSON.stringify(error.response.data)}`;
+        }
         status.status = 'error';
       }
     });
