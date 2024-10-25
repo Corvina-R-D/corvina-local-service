@@ -37,7 +37,7 @@ export interface IArtifact {
   type: string;
   size: number;
   uploadedAt: string;
-  labels?: Record<string, string>;
+  labels?: Record<string, string> | null;
   repositoryName: string;
   resourceUrl: string;
   versions?: string[] | null;
