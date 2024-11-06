@@ -461,7 +461,7 @@
           "hostname": {
             "type": "string",
             "nullable": true,
-            "x-typia-required": false
+            "x-typia-required": true
           }
         },
         "nullable": false,
@@ -472,7 +472,8 @@
           "orgResourceId",
           "organizationId",
           "instanceId",
-          "lastError"
+          "lastError",
+          "hostname"
         ],
         "x-typia-jsDocTags": []
       },

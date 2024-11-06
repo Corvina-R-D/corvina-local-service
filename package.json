@@ -1,6 +1,6 @@
 {
   "name": "CorvinaLocalServer",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "Local proxy interface for corvina APIs",
   "main": "main/dist/main.js",
   "scripts": {

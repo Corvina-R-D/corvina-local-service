@@ -116,10 +116,11 @@ const fillStatusFromToken = async (token: string, loginOrg?: string) => {
 export async function refreshTokens() {
   const refreshToken = await keytar.getPassword(keytarService, keytarAccount);
   if (!refreshToken) {
+    console.error("No token saved for refresh!")
     return;
   }
 
-  const loginOrg = (jwtDecode(refreshToken) as any).authorization.permissions[0].rsname;
+  const loginOrg = (jwtDecode(refreshToken) as any).scope.split('org:')[1].split(' ')[0];
   const tokenEndpoint = (await getUris()).token_endpoint;
 
   const refreshOptions = {
@@ -136,7 +137,11 @@ export async function refreshTokens() {
   try {
     const response = await axios(refreshOptions);
 
+    console.log("Token refreshed!");
     saveAccessToken(response.data.access_token);
+    if (response.data.refresh_token) {
+      await keytar.setPassword(keytarService, keytarAccount, response.data.refresh_token);
+    }
 
     // request rpt token
     await fillStatusFromToken(accessToken, loginOrg);
@@ -173,6 +178,9 @@ export async function loadTokens(callbackURL: string) {
   try {
     const response = await axios(options);
     saveAccessToken(response.data.access_token);
+    if (response.data.refresh_token) {
+      await keytar.setPassword(keytarService, keytarAccount, response.data.refresh_token);
+    }
 
     // try to decode token and extract login org
     let loginOrg = undefined;
@@ -187,6 +195,9 @@ export async function loadTokens(callbackURL: string) {
     }
 
     await loadOrgToken(loginOrg);
+
+    // start the timer to keep the token refreshed
+    getAccessToken();
   } catch (error) {
     if (!(error instanceof OrganizationSelectionRequiredException)) {
       await logout();
