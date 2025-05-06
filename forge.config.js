@@ -1,3 +1,4 @@
+console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", process.env)
 module.exports = {
   packagerConfig: {
     dir: "main/dist",
@@ -23,16 +24,16 @@ module.exports = {
     },
   ],
   publishers: [
-    {
-      name: '@electron-forge/publisher-github',
-      config: {
-        repository: {
-          owner: 'Corvina-R-D',
-          name: 'corvina-local-service'
-        },
-        prerelease: true
-      }
-    }
+    // {
+    //   name: '@electron-forge/publisher-github',
+    //   config: {
+    //     repository: {
+    //       owner: 'Corvina-R-D',
+    //       name: 'corvina-local-service'
+    //     },
+    //     prerelease: true
+    //   }
+    // },
     // {
     //   name: '@electron-forge/publisher-bitbucket',
     //   config: {

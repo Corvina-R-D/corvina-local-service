@@ -60,6 +60,7 @@ export interface IArtifactIn {
   version?: string;
   type: string;
   labels?: Record<string, string>;
+  artifactLabels?: Record<string, string>;
   publicAccess?: boolean;
 }
 
@@ -74,7 +75,7 @@ interface IApp {
 const getArtifactRegistryBaseUrl = async (): Promise<string | undefined> => {
   if (artifactRegistryBaseUrl == null) {
     const url = `${baseUrl}/svc/core/api/v1/organizations/${loginStatus.organizationId}/apps`;
-    const response = await axios.get(url, { headers: { Authorization: `Bearer ${await authService.getAccessToken()}` } });
+    const response = await axios.get(url, { params : { page:0, pageSize: 100000}, headers: { Authorization: `Bearer ${await authService.getAccessToken()}` } });
     artifactRegistryBaseUrl = response.data.content.filter((c: IApp) => c.app.key === 'corvina-app-artifact-registry').map((c: IApp) => c.app.manifest.baseUrl);
   }
   return artifactRegistryBaseUrl;
@@ -107,9 +108,13 @@ export const postArtifact = async (
     const formData = new FormData();
     if (artifact.version) formData.append('version', artifact.version);
     if (artifact.publicAccess) formData.append('publicAccess', artifact.publicAccess.toString());
-    if (artifact.labels) formData.append('labels', JSON.stringify(artifact.labels));
+    if (artifact.labels) {
+      formData.append('labels', JSON.stringify(artifact.labels));
+      formData.append('artifactLabels', JSON.stringify(artifact.labels));
+    }
     else {
       formData.append('labels', '{}'); // is required
+      formData.append('artifactLabels', '{}');
     }
     formData.append('name', artifact.repositoryName);
     formData.append('type', artifact.type);

@@ -22,6 +22,10 @@ Debugging (from a javascript debug terminal in vscode)
 
 # Publishing
 
+The bitbucket publisher does not work (authentication does not support bearer).
+
+Manually copy files in repository downloads from folder `out/make/squirrel.windows/x64` .
+
 `npm run publish`
 
 
