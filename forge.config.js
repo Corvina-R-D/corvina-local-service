@@ -1,8 +1,10 @@
-console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", process.env)
+const path = require('path');
+
 module.exports = {
   packagerConfig: {
-    dir: "main/dist",
-    ignore: ["main/src", "main/public"]
+    dir: path.resolve(__dirname, "main/dist"), // Ensure buildPath is an absolute path
+    tmpdir: path.resolve(__dirname, '../corvina-local-service-tmp-dir'),
+    ignore: ["main/src", "main/public"],
   },
   rebuildConfig: {},
   makers: [

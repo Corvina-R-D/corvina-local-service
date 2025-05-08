@@ -50,3 +50,7 @@ Thumbs.db
 *.mov
 *.wmv
 
+main/tmp
+main/.env
+.env
+main/src/generated

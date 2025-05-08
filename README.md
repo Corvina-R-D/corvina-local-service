@@ -20,6 +20,12 @@ Debugging (from a javascript debug terminal in vscode)
 
 `npm run make`
 
+In windows might be required to have admin privileges to run the command:
+
+```
+Start-Process powershell -Verb RunAs -ArgumentList "-Command", "cd $PWD ; npm run make ; pause"
+```
+
 # Publishing
 
 The bitbucket publisher does not work (authentication does not support bearer).

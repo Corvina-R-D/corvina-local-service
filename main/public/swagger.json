@@ -616,7 +616,7 @@
             "x-typia-required": true
           },
           "labels": {
-            "$ref": "#/components/schemas/Record_lt_string_comma__space_string_gt_",
+            "$ref": "#/components/schemas/Record_lt_string_comma__space_string_gt_.Nullable",
             "x-typia-required": false
           },
           "repositoryName": {
@@ -656,6 +656,22 @@
         ],
         "x-typia-jsDocTags": []
       },
+      "Record_lt_string_comma__space_string_gt_.Nullable": {
+        "type": "object",
+        "properties": {},
+        "nullable": true,
+        "x-typia-jsDocTags": [],
+        "x-typia-additionalProperties": {
+          "type": "string",
+          "nullable": false,
+          "x-typia-required": true
+        },
+        "additionalProperties": {
+          "type": "string",
+          "nullable": false,
+          "x-typia-required": true
+        }
+      },
       "IArtifactIn": {
         "type": "object",
         "properties": {
@@ -680,6 +696,10 @@
             "x-typia-required": true
           },
           "labels": {
+            "$ref": "#/components/schemas/Record_lt_string_comma__space_string_gt_",
+            "x-typia-required": false
+          },
+          "artifactLabels": {
             "$ref": "#/components/schemas/Record_lt_string_comma__space_string_gt_",
             "x-typia-required": false
           },
