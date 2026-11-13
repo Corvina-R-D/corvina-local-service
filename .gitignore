@@ -54,3 +54,6 @@ main/tmp
 main/.env
 .env
 main/src/generated
+
+# Claude Code settings (may contain credentials)
+.claude/settings*.json
