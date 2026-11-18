@@ -46,8 +46,9 @@ export async function createAuthWindow() {
     urls: [`${authService.selectOrgRedirectUri}*`, `${authService.redirectUri}*`],
   }, async ({ url }) => {
     if (url.startsWith(authService.selectOrgRedirectUri)) {
-      const organizationId = (new URL(url)).searchParams.get('org')?.split(",")[1];
-      loginWindow!.loadURL(await authService.getAuthenticationURL(authService.getOrgResourceId(parseInt(organizationId!))));
+      // Restart the login asking for the selected organization (resourceId).
+      const orgResourceId = (new URL(url)).searchParams.get('org') ?? undefined;
+      loginWindow!.loadURL(await authService.getAuthenticationURL(orgResourceId));
     } else {
       try {
         await authService.loadTokens(url);

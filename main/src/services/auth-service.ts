@@ -88,8 +88,35 @@ export async function getAuthenticationURL(orgScope?: string) {
   return `${(await getUris()).authorization_endpoint}?client_id=${clientId}&redirect_uri=${redirectUri}&response_mode=fragment&response_type=code&code_challenge=${codeChallenge}&code_challenge_method=S256&scope=openid${orgScope ? " org:" + orgScope :  " org:*"}`;
 }
 
+/** Organizations of the logged-in user, as returned by the last status refresh. */
+let userOrganizationsCache: IOrganization[] = [];
+
+const escapeHtml = (s: string) =>
+  String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+
+/**
+ * Local organization selection page. The Corvina portal page cannot be used
+ * here: it logs in with its own client (corvina-web-portal), which rejects the
+ * localhost redirect. Each entry navigates to selectOrgRedirectUri, which the
+ * login window intercepts to restart the login with "org:<resourceId>" using
+ * this application's client.
+ */
 export function getLoginSelectionUrl() {
-  return `${baseUrl}/#/organization?redirectTo=${selectOrgRedirectUri}`;
+  const items = [...userOrganizationsCache]
+    .sort((a, b) => (a.label || a.name).localeCompare(b.label || b.name))
+    .map((org) => `<li><a href="${selectOrgRedirectUri}?org=${encodeURIComponent(org.resourceId)}">${escapeHtml(org.label || org.name)}<small>${escapeHtml(org.resourceId)}</small></a></li>`)
+    .join('');
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Corvina - select organization</title>
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;background:#f4f6f8;color:#2c3e50;margin:0;display:flex;justify-content:center}
+main{background:#fff;margin:40px 16px;padding:24px 32px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.15);min-width:360px}
+h1{font-size:20px;margin:0 0 4px}p{margin:0 0 16px;color:#607080}
+ul{list-style:none;padding:0;margin:0}li{border-top:1px solid #e3e7eb}
+a{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;color:#2c3e50;text-decoration:none;font-size:16px}
+a:hover{background:#eef3f7}small{color:#90a0b0;font-size:12px;margin-left:16px}
+</style></head><body><main><h1>Select the organization</h1>
+<p>${escapeHtml(profile?.preferred_username ?? '')}</p><ul>${items}</ul></main></body></html>`;
+  return `data:text/html;charset=utf-8,${encodeURIComponent(html)}`;
 }
 
 export class OrganizationSelectionRequiredException extends Error {};
@@ -115,6 +142,7 @@ const fillStatusFromToken = async (token: string, loginOrg?: string) => {
   const userOrganizations = await axios.get(`${baseUrl}/svc/core/api/v1/organizations/mine`, { headers: { Authorization: `Bearer ${token}` } });
 
   // populate orgIdCache
+  userOrganizationsCache = userOrganizations.data;
   userOrganizations.data.forEach((org: IOrganization) => {
     orgIdCache.set(org.id, org.resourceId);
   });
@@ -212,7 +240,12 @@ export async function loadTokens(callbackURL: string) {
       await keytar.setPassword(keytarService, keytarAccount, response.data.refresh_token);
     }
 
-    const loginOrg = orgFromTokenPermissions(response.data.access_token);
+    // Organization explicitly requested in the scope (after a selection),
+    // otherwise the one granted by the token if it is the only one.
+    const scopeOrg: string | undefined = (jwtDecode(response.data.access_token) as any).scope?.split('org:')[1]?.split(' ')[0];
+    const loginOrg = scopeOrg && scopeOrg !== '*'
+      ? scopeOrg
+      : orgFromTokenPermissions(response.data.access_token);
     if (loginOrg) {
       console.log("Selected organization: ", loginOrg);
     }
