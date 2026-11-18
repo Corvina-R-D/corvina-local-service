@@ -1,5 +1,6 @@
 import { BrowserWindow, Menu, Tray, app, ipcMain, shell } from 'electron';
 
+import * as http from 'http';
 import * as path from 'path';
 import { createAuthWindow, createLogoutWindow } from './auth-process';
 // import { createAppWindow } from './main/app-process';
@@ -59,7 +60,15 @@ app.on('ready', async () => {
   SwaggerModule.setup('swagger-ui-current', serverApp, document);
   SwaggerModule.setup('swagger-ui', serverApp, document);
 
-  serverApp.listen(5804);
+  // The API acts with the logged-in user's Corvina credentials and has no
+  // authentication of its own: bind to loopback only so it is not reachable
+  // from the network. Listen on both IPv4 and IPv6 loopback because clients
+  // may resolve "localhost" to either.
+  await serverApp.listen(port, '127.0.0.1');
+  http
+    .createServer(serverApp.getHttpAdapter().getInstance())
+    .on('error', (err) => console.warn(`IPv6 loopback listener not available: ${err.message}`))
+    .listen(port, '::1');
 
 });
 

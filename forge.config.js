@@ -4,7 +4,20 @@ module.exports = {
   packagerConfig: {
     dir: path.resolve(__dirname, "main/dist"), // Ensure buildPath is an absolute path
     tmpdir: path.resolve(__dirname, '../corvina-local-service-tmp-dir'),
-    ignore: ["main/src", "main/public"],
+    // Regexes matched against paths relative to the app root (e.g. "/main/src").
+    // Keep secrets and dev-only files out of the shipped installer.
+    ignore: [
+      "main/src",
+      "main/public",
+      "^/(main/)?\\.env",       // local env files (may hold publishing credentials)
+      "\\.ps1$",                 // local helper scripts (may hold credentials)
+      "^/\\.github",
+      "^/\\.vscode",
+      "^/\\.eslintrc",
+      "^/\\.prettierrc",
+      "^/\\.gitignore$",
+      "^/env-variables\\.json\\.template$",
+    ],
   },
   rebuildConfig: {},
   makers: [
