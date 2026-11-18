@@ -1,4 +1,5 @@
 import axios from 'axios';
+import * as crypto from 'crypto';
 import jwtDecode, { JwtPayload } from 'jwt-decode';
 import * as keytar from 'keytar';
 import * as os from 'os';
@@ -77,8 +78,14 @@ export async function getUris(r: string = realm): Promise<IWellKnownUris> {
   return <IWellKnownUris>wellKnownUris;
 }
 
+// PKCE (RFC 7636): this is a public client, so the authorization code is bound
+// to a one-time verifier that only this process knows.
+let pkceVerifier: string | null = null;
+
 export async function getAuthenticationURL(orgScope?: string) {
-  return `${(await getUris()).authorization_endpoint}?client_id=${clientId}&redirect_uri=${redirectUri}&response_mode=fragment&response_type=code&scope=openid${orgScope ? " org:" + orgScope :  " org:*"}`;
+  pkceVerifier = crypto.randomBytes(32).toString('base64url');
+  const codeChallenge = crypto.createHash('sha256').update(pkceVerifier).digest('base64url');
+  return `${(await getUris()).authorization_endpoint}?client_id=${clientId}&redirect_uri=${redirectUri}&response_mode=fragment&response_type=code&code_challenge=${codeChallenge}&code_challenge_method=S256&scope=openid${orgScope ? " org:" + orgScope :  " org:*"}`;
 }
 
 export function getLoginSelectionUrl() {
@@ -86,6 +93,19 @@ export function getLoginSelectionUrl() {
 }
 
 export class OrganizationSelectionRequiredException extends Error {};
+
+/** Returns the organization granted by the token when it grants exactly one. */
+function orgFromTokenPermissions(token: string): string | undefined {
+  try {
+    const permissions = JSON.parse(Buffer.from(token.split(".")[1], 'base64').toString()).authorization.permissions;
+    if (permissions.length == 1) {
+      return permissions[0].rsname;
+    }
+  } catch (error) {
+    console.warn('Cannot extract a valid login org from current token', error);
+  }
+  return undefined;
+}
 
 const fillStatusFromToken = async (token: string, loginOrg?: string) => {
   profile = jwtDecode(token);
@@ -120,7 +140,9 @@ export async function refreshTokens() {
     return;
   }
 
-  const loginOrg = (jwtDecode(refreshToken) as any).scope.split('org:')[1].split(' ')[0];
+  // Organization requested at login: "org:<resourceId>" after an explicit
+  // selection, or the wildcard "org:*" when the user did not have to choose.
+  const scopeOrg: string | undefined = (jwtDecode(refreshToken) as any).scope?.split('org:')[1]?.split(' ')[0];
   const tokenEndpoint = (await getUris()).token_endpoint;
 
   const refreshOptions = {
@@ -143,6 +165,12 @@ export async function refreshTokens() {
       await keytar.setPassword(keytarService, keytarAccount, response.data.refresh_token);
     }
 
+    // "*" is not an organization: resolve it the same way the initial login
+    // does, otherwise no organization matches and the user gets logged out.
+    const loginOrg = scopeOrg && scopeOrg !== '*'
+      ? scopeOrg
+      : loginStatus.orgResourceId || orgFromTokenPermissions(accessToken);
+
     // request rpt token
     await fillStatusFromToken(accessToken, loginOrg);
 
@@ -164,7 +192,9 @@ export async function loadTokens(callbackURL: string) {
     client_id: clientId,
     code: query.code,
     redirect_uri: redirectUri,
+    code_verifier: pkceVerifier,
   };
+  pkceVerifier = null;
 
   const options = {
     method: 'POST',
@@ -182,16 +212,9 @@ export async function loadTokens(callbackURL: string) {
       await keytar.setPassword(keytarService, keytarAccount, response.data.refresh_token);
     }
 
-    // try to decode token and extract login org
-    let loginOrg = undefined;
-    try {
-      const permissions = JSON.parse( Buffer.from(response.data.access_token.split(".")[1], 'base64').toString() ).authorization.permissions;
-      if (permissions.length == 1) {
-        loginOrg = permissions[0].rsname;
-        console.log("Selected organization: ", loginOrg);
-      }
-    } catch (error) {
-      console.warn('Cannot extract a valid login org from current token', error);
+    const loginOrg = orgFromTokenPermissions(response.data.access_token);
+    if (loginOrg) {
+      console.log("Selected organization: ", loginOrg);
     }
 
     await loadOrgToken(loginOrg);
