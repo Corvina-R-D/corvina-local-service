@@ -10,7 +10,7 @@ module.exports = {
       "main/src",
       "main/public",
       "^/(main/)?\\.env",       // local env files (may hold publishing credentials)
-      "^/[^/]+\\.ps1$",          // local helper scripts (may hold credentials)
+      "\\.ps1$",                 // local helper scripts (may hold credentials)
       "^/\\.github",
       "^/\\.vscode",
       "^/\\.eslintrc",
